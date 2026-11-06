@@ -1,0 +1,11 @@
+.cv-vehicle-fields { display: grid; grid-template-columns: repeat(2, minmax(220px, 1fr)); gap: 0 24px; }
+.cv-vehicle-fields p { margin: 12px 0; }
+.cv-vehicle-fields .widefat { max-width: 100%; }
+#cv_vehicle_data .inside > .description { margin-top: 8px; }
+@media (max-width: 782px) { .cv-vehicle-fields { grid-template-columns: 1fr; } }
+.cv-gallery-list { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0; }
+.cv-gallery-item { position: relative; display: flex; width: 132px; min-height: 150px; padding: 8px; flex-direction: column; align-items: center; justify-content: space-between; box-sizing: border-box; background: #f6f7f7; border: 1px solid #c3c4c7; cursor: default; }
+.cv-gallery-item img { display: block; width: 112px; height: 112px; object-fit: cover; }
+.cv-gallery-drag { align-self: flex-start; cursor: move; font-size: 18px; line-height: 20px; }
+.cv-gallery-item.ui-sortable-helper { box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+.cv-gallery-count { margin-left: 10px; color: #646970; }
