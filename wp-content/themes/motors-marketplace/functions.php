@@ -19,6 +19,10 @@ function motors_marketplace_assets() {
 	$css_path = get_theme_file_path( '/style.css' );
 	wp_enqueue_style( 'motors-marketplace', get_theme_file_uri( '/style.css' ), array(), file_exists( $css_path ) ? (string) filemtime( $css_path ) : $theme_version );
 	wp_enqueue_script( 'motors-marketplace-menu', get_theme_file_uri( '/assets/menu.js' ), array(), $theme_version, true );
+	if ( is_singular( 'veiculos' ) ) {
+		$gallery_path = get_theme_file_path( '/assets/gallery.js' );
+		wp_enqueue_script( 'motors-marketplace-gallery', get_theme_file_uri( '/assets/gallery.js' ), array(), file_exists( $gallery_path ) ? (string) filemtime( $gallery_path ) : $theme_version, true );
+	}
 }
 add_action( 'wp_enqueue_scripts', 'motors_marketplace_assets' );
 

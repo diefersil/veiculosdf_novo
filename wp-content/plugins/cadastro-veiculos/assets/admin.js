@@ -10,7 +10,12 @@
 	}
 
 	function selectedValue(select) {
-		return select ? parseInt(select.value || '0', 10) : 0;
+		if (!select) return 0;
+		if (select.type === 'radio') {
+			var checked = select.closest('fieldset').querySelector('input[type="radio"]:checked');
+			return checked ? parseInt(checked.value, 10) : 0;
+		}
+		return parseInt(select.value || '0', 10);
 	}
 
 	function selectedValues(select) {
@@ -33,7 +38,11 @@
 			var old = selectedValues(select);
 			var data = window.CVVehicleData[taxonomy] || [];
 			while (select.options.length > (select.multiple ? 0 : 1)) select.remove(select.multiple ? 0 : 1);
-			data.filter(predicate).forEach(function (term) {
+			var search = taxonomy === 'versao' ? (box.querySelector('[data-search-taxonomy="versao"]') || {}).value || '' : '';
+			search = search.trim().toLocaleLowerCase('pt-BR');
+			data.filter(function (term) {
+				return predicate(term) && (!search || term.name.toLocaleLowerCase('pt-BR').indexOf(search) !== -1);
+			}).forEach(function (term) {
 				select.appendChild(optionForTerm(term, old.indexOf(term.id) !== -1));
 			});
 		}
@@ -47,10 +56,21 @@
 		refresh(versionSelect, 'versao', function (term) {
 			return !!modelId && (!typeId || term.types.indexOf(typeId) !== -1) && term.parent === modelId;
 		});
-		['estilo', 'opcionais'].forEach(function (taxonomy) {
+		['estilo'].forEach(function (taxonomy) {
 			var select = box.querySelector('[data-taxonomy="' + taxonomy + '"]');
 			refresh(select, taxonomy, function (term) { return !typeId || term.types.indexOf(typeId) !== -1; });
 		});
+		var optionalList = box.querySelector('.cv-vehicle-options[data-taxonomy="opcionais"]');
+		if (optionalList) {
+			var optionalTerms = window.CVVehicleData.opcionais || [];
+			optionalList.querySelectorAll('input[type="checkbox"]').forEach(function (checkbox) {
+				var term = optionalTerms.filter(function (item) { return item.id === parseInt(checkbox.value, 10); })[0];
+				var allowed = !!term && (!typeId || term.types.indexOf(typeId) !== -1);
+				checkbox.disabled = !allowed;
+				checkbox.closest('label').hidden = !allowed;
+				if (!allowed) checkbox.checked = false;
+			});
+		}
 	}
 
 	function filterTermParentOptions() {
@@ -112,6 +132,8 @@
 			box.addEventListener('change', function (event) {
 				if (event.target.matches('.cv-term-select')) filterVehicleFields();
 			});
+			var versionSearch = box.querySelector('[data-search-taxonomy="versao"]');
+			if (versionSearch) versionSearch.addEventListener('input', filterVehicleFields);
 		}
 		filterTermParentOptions();
 		document.addEventListener('change', function (event) {

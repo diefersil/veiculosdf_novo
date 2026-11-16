@@ -34,6 +34,89 @@ final class Cadastro_Veiculos {
 		return array( 'Manual', 'Automático', 'Automatizado', 'CVT', 'Elétrico', 'DCT / dupla embreagem', 'Semi-automático' );
 	}
 
+	private static function condition_options() {
+		return array( 'Novo', 'Usado' );
+	}
+
+	private static function motor_options() {
+		return array( '1.0', '1.0 Turbo', '1.3', '1.4', '1.4 Turbo', '1.5', '1.6', '1.8', '2.0', '2.0 Turbo', '2.4', '3.0', '3.5', '4.0', '5.0', '6.0 Diesel', '9.0 Diesel', '13.0 Diesel', '125 cc', '150 cc', '160 cc', '250 cc', '300 cc', '500 cc', '600 cc', '1000 cc', 'Elétrico', 'Outro' );
+	}
+
+	private static function fuel_options() {
+		return array( 'Flex', 'Gasolina', 'Etanol', 'Diesel', 'Elétrico', 'Híbrido', 'GNV', 'Outro' );
+	}
+
+	private static function door_options() {
+		return array( '2', '3', '4', '5', '6', 'Mais de 6' );
+	}
+
+	private static function optional_presets() {
+		return array(
+			'carros' => array(
+				'Ar-condicionado', 'Direção hidráulica', 'Direção elétrica', 'Vidros elétricos', 'Travas elétricas', 'Alarme', 'Airbag frontal', 'Airbags laterais', 'Airbags de cortina', 'Freios ABS', 'Controle de estabilidade', 'Controle de tração', 'Câmera de ré', 'Sensor de estacionamento', 'Central multimídia', 'Bluetooth', 'Apple CarPlay', 'Android Auto', 'Piloto automático', 'Bancos em couro', 'Banco do motorista com regulagem de altura', 'Rodas de liga leve', 'Faróis de neblina', 'Faróis de LED', 'Teto solar', 'Chave presencial', 'Partida por botão', 'Sensor de chuva', 'Sensor crepuscular', 'ISOFIX', 'Monitoramento da pressão dos pneus', 'Engate para reboque',
+			),
+			'motos' => array(
+				'Freios ABS', 'Freios CBS', 'Injeção eletrônica', 'Partida elétrica', 'Alarme', 'Imobilizador', 'Controle de tração', 'Embreagem deslizante', 'Quick shifter', 'Para-brisa', 'Protetor de motor', 'Protetor de mãos', 'Baú traseiro', 'Baús laterais', 'Bagageiro', 'Aquecimento de manoplas', 'Suspensão ajustável', 'Farol de LED', 'Painel digital', 'Tomada USB', 'Conexão Bluetooth', 'Rastreador',
+			),
+			'caminhoes' => array(
+				'Ar-condicionado', 'Direção hidráulica', 'Freios ABS', 'Controle de estabilidade', 'Controle de tração', 'Freio auxiliar', 'Retarder', 'Bloqueio de diferencial', 'Suspensão pneumática', 'Cabine leito', 'Câmera de ré', 'Sensor de estacionamento', 'Piloto automático', 'Faróis de LED', 'Rastreador', 'Telemetria', 'Tomada de força', 'Quinta roda', 'Defletor de ar', 'Balança embarcada', 'Unidade frigorífica', 'Ar-condicionado estacionário', 'Tanque suplementar', 'Engate para reboque',
+			),
+		);
+	}
+
+	private static function optional_groups_for_type( $type ) {
+		$slug = is_object( $type ) && isset( $type->slug ) ? sanitize_title( $type->slug . ' ' . $type->name ) : sanitize_title( (string) $type );
+		$groups = array();
+		if ( preg_match( '/moto|motocicleta/', $slug ) ) {
+			$groups[] = 'motos';
+		}
+		if ( preg_match( '/caminh|truck|pesado/', $slug ) ) {
+			$groups[] = 'caminhoes';
+		}
+		if ( preg_match( '/carro|automovel|auto/', $slug ) ) {
+			$groups[] = 'carros';
+		}
+		return $groups;
+	}
+
+	public static function seed_default_optional_terms() {
+		if ( get_option( 'cv_default_optional_terms_seeded' ) ) {
+			return;
+		}
+		$types = get_terms( array( 'taxonomy' => self::TYPE_TAX, 'hide_empty' => false ) );
+		if ( is_wp_error( $types ) || empty( $types ) ) {
+			return;
+		}
+		foreach ( $types as $type ) {
+			self::assign_default_optional_terms_to_type( $type->term_id );
+		}
+		update_option( 'cv_default_optional_terms_seeded', 1, false );
+	}
+
+	public static function assign_default_optional_terms_to_type( $type_id ) {
+		$type = get_term( $type_id, self::TYPE_TAX );
+		if ( ! $type || is_wp_error( $type ) ) {
+			return;
+		}
+		foreach ( self::optional_groups_for_type( $type ) as $group ) {
+			foreach ( self::optional_presets()[ $group ] as $label ) {
+				$existing = term_exists( $label, 'opcionais' );
+				if ( ! $existing ) {
+					$existing = wp_insert_term( $label, 'opcionais' );
+				}
+				if ( is_wp_error( $existing ) || ! $existing ) {
+					continue;
+				}
+				$optional_id = is_array( $existing ) ? absint( $existing['term_id'] ) : absint( $existing );
+				$types = array_map( 'intval', (array) get_term_meta( $optional_id, self::META_TYPES, true ) );
+				if ( ! in_array( (int) $type_id, $types, true ) ) {
+					$types[] = (int) $type_id;
+					update_term_meta( $optional_id, self::META_TYPES, $types );
+				}
+			}
+		}
+	}
+
 	private static function style_presets() {
 		return array(
 			'carro' => array( 'Sedan', 'Hatch', 'SUV', 'Picape', 'Coupé', 'Conversível', 'Perua', 'Minivan', 'Furgão' ),
@@ -110,6 +193,7 @@ final class Cadastro_Veiculos {
 		add_action( 'init', array( __CLASS__, 'register_content' ) );
 		add_action( 'init', array( __CLASS__, 'ensure_account_page' ), 30 );
 		add_action( 'init', array( __CLASS__, 'seed_default_styles' ), 20 );
+		add_action( 'init', array( __CLASS__, 'seed_default_optional_terms' ), 20 );
 		add_action( 'init', array( __CLASS__, 'backfill_expiration_dates' ), 40 );
 		add_action( 'transition_post_status', array( __CLASS__, 'set_expiration_on_publish' ), 10, 3 );
 		add_action( 'template_redirect', array( __CLASS__, 'hide_inactive_vehicle' ) );
@@ -139,8 +223,40 @@ final class Cadastro_Veiculos {
 			add_action( $taxonomy . '_edit_form_fields', array( __CLASS__, 'term_edit_fields' ) );
 			add_action( 'created_' . $taxonomy, array( __CLASS__, 'save_term_fields' ) );
 			add_action( 'edited_' . $taxonomy, array( __CLASS__, 'save_term_fields' ) );
+			if ( self::TYPE_TAX !== $taxonomy ) {
+				add_filter( 'manage_edit-' . $taxonomy . '_columns', array( __CLASS__, 'add_vehicle_type_column' ) );
+				add_filter( 'manage_' . $taxonomy . '_custom_column', array( __CLASS__, 'render_vehicle_type_column' ), 10, 3 );
+			}
 		}
 		add_action( 'created_' . self::TYPE_TAX, array( __CLASS__, 'assign_default_styles_to_type' ) );
+		add_action( 'created_' . self::TYPE_TAX, array( __CLASS__, 'assign_default_optional_terms_to_type' ) );
+	}
+
+	private static function model_family_term_ids( $model_id ) {
+		$model = get_term( $model_id, 'modelo' );
+		if ( ! $model || is_wp_error( $model ) ) {
+			return array();
+		}
+		$brand_id = (int) get_term_meta( $model_id, self::META_PARENT, true );
+		$prefix = trim( $model->name );
+		$models = get_terms( array( 'taxonomy' => 'modelo', 'hide_empty' => false ) );
+		if ( is_wp_error( $models ) ) {
+			return array( (int) $model_id );
+		}
+		$ids = array();
+		foreach ( $models as $candidate ) {
+			if ( (int) get_term_meta( $candidate->term_id, self::META_PARENT, true ) !== $brand_id ) {
+				continue;
+			}
+			$name = trim( $candidate->name );
+			if ( 0 === stripos( $name, $prefix ) ) {
+				$suffix = substr( $name, strlen( $prefix ) );
+				if ( '' === $suffix || preg_match( '/^[\s\pP]/u', $suffix ) ) {
+					$ids[] = (int) $candidate->term_id;
+				}
+			}
+		}
+		return $ids ? $ids : array( (int) $model_id );
 	}
 
 	public static function filter_vehicle_archive( $query ) {
@@ -148,11 +264,22 @@ final class Cadastro_Veiculos {
 			return;
 		}
 		$tax_query = array();
-		foreach ( array( 'cv_marca' => 'marca', 'cv_modelo' => 'modelo' ) as $input => $taxonomy ) {
-			$term_id = isset( $_GET[ $input ] ) ? absint( wp_unslash( $_GET[ $input ] ) ) : 0;
-			if ( $term_id ) {
-				$tax_query[] = array( 'taxonomy' => $taxonomy, 'field' => 'term_id', 'terms' => $term_id );
+		$brand_id = isset( $_GET['cv_marca'] ) ? absint( wp_unslash( $_GET['cv_marca'] ) ) : 0;
+		if ( $brand_id ) {
+			$tax_query[] = array( 'taxonomy' => 'marca', 'field' => 'term_id', 'terms' => $brand_id );
+		}
+		$model_filter = isset( $_GET['cv_modelo'] ) ? sanitize_text_field( wp_unslash( $_GET['cv_modelo'] ) ) : '';
+		if ( 0 === strpos( $model_filter, 'family:' ) ) {
+			$model_ids = self::model_family_term_ids( absint( substr( $model_filter, 7 ) ) );
+			if ( $model_ids ) {
+				$tax_query[] = array( 'taxonomy' => 'modelo', 'field' => 'term_id', 'terms' => $model_ids );
 			}
+		} elseif ( absint( $model_filter ) ) {
+			$tax_query[] = array( 'taxonomy' => 'modelo', 'field' => 'term_id', 'terms' => absint( $model_filter ) );
+		}
+		$version_id = isset( $_GET['cv_versao'] ) ? absint( wp_unslash( $_GET['cv_versao'] ) ) : 0;
+		if ( $version_id ) {
+			$tax_query[] = array( 'taxonomy' => 'versao', 'field' => 'term_id', 'terms' => $version_id );
 		}
 		if ( $tax_query ) {
 			$query->set( 'tax_query', $tax_query );
@@ -230,17 +357,23 @@ final class Cadastro_Veiculos {
 	}
 
 	public static function enqueue_frontend_assets() {
-		if ( is_front_page() ) {
-			wp_enqueue_script( 'cv-home', plugin_dir_url( __FILE__ ) . 'assets/home.js', array(), '1.0.0', true );
+		if ( is_front_page() || is_post_type_archive( self::POST_TYPE ) ) {
+			$home_script = plugin_dir_path( __FILE__ ) . 'assets/home.js';
+			wp_enqueue_script( 'cv-home', plugin_dir_url( __FILE__ ) . 'assets/home.js', array(), file_exists( $home_script ) ? (string) filemtime( $home_script ) : '1.0.0', true );
 			$term_data = self::all_term_data();
-			wp_localize_script( 'cv-home', 'CVHomeVehicleData', array( 'modelo' => $term_data['modelo'] ) );
-			wp_enqueue_style( 'cv-home', plugin_dir_url( __FILE__ ) . 'assets/home.css', array(), '1.0.0' );
+			wp_localize_script( 'cv-home', 'CVHomeVehicleData', array_intersect_key( $term_data, array_flip( array( 'marca', 'modelo', 'versao' ) ) ) );
+			if ( is_front_page() ) {
+				$home_style = plugin_dir_path( __FILE__ ) . 'assets/home.css';
+				wp_enqueue_style( 'cv-home', plugin_dir_url( __FILE__ ) . 'assets/home.css', array(), file_exists( $home_style ) ? (string) filemtime( $home_style ) : '1.0.0' );
+			}
 		}
 		if ( is_page( 'minha-conta' ) ) {
 			self::enqueue_account_vehicle_actions();
-			wp_enqueue_script( 'cv-account', plugin_dir_url( __FILE__ ) . 'assets/account.js', array(), '1.0.0', true );
+			$account_script = plugin_dir_path( __FILE__ ) . 'assets/account.js';
+			wp_enqueue_script( 'cv-account', plugin_dir_url( __FILE__ ) . 'assets/account.js', array(), file_exists( $account_script ) ? (string) filemtime( $account_script ) : '1.0.0', true );
 			wp_localize_script( 'cv-account', 'CVVehicleData', self::all_term_data() );
-			wp_enqueue_script( 'cv-admin', plugin_dir_url( __FILE__ ) . 'assets/admin.js', array( 'jquery', 'jquery-ui-sortable' ), '1.2.0', true );
+			$admin_script = plugin_dir_path( __FILE__ ) . 'assets/admin.js';
+			wp_enqueue_script( 'cv-admin', plugin_dir_url( __FILE__ ) . 'assets/admin.js', array( 'jquery', 'jquery-ui-sortable' ), file_exists( $admin_script ) ? (string) filemtime( $admin_script ) : '1.2.0', true );
 			wp_enqueue_media();
 			wp_enqueue_style( 'cv-account', plugin_dir_url( __FILE__ ) . 'assets/account.css', array(), (string) filemtime( plugin_dir_path( __FILE__ ) . 'assets/account.css' ) );
 		}
@@ -263,16 +396,18 @@ final class Cadastro_Veiculos {
 		$account_url = $account ? get_permalink( $account ) : home_url( '/minha-conta/' );
 		$brands = get_terms( array( 'taxonomy' => 'marca', 'hide_empty' => false ) );
 		$models = get_terms( array( 'taxonomy' => 'modelo', 'hide_empty' => false ) );
+		$listing_brands = get_terms( array( 'taxonomy' => 'marca', 'hide_empty' => true ) );
+		$listing_models = get_terms( array( 'taxonomy' => 'modelo', 'hide_empty' => true ) );
 		$html = '<div class="cv-home">';
 		$html .= '<section class="cv-home-hero"><div class="cv-home-hero-inner"><span class="cv-home-eyebrow">Seu próximo veículo está aqui</span><h1>Encontre o veículo<br>ideal para você.</h1><p>Pesquise entre os veículos cadastrados e encontre a melhor opção.</p><form class="cv-home-search" method="get" action="' . esc_url( $archive ) . '"><label>Marca<select name="cv_marca" data-taxonomy="marca"><option value="">Todas as marcas</option>';
-		if ( ! is_wp_error( $brands ) ) {
-			foreach ( $brands as $brand ) {
+		if ( ! is_wp_error( $listing_brands ) ) {
+			foreach ( $listing_brands as $brand ) {
 				$html .= '<option value="' . (int) $brand->term_id . '">' . esc_html( $brand->name ) . '</option>';
 			}
 		}
 		$html .= '</select></label><label>Modelo<select name="cv_modelo" data-taxonomy="modelo"><option value="">Todos os modelos</option>';
-		if ( ! is_wp_error( $models ) ) {
-			foreach ( $models as $model ) {
+		if ( ! is_wp_error( $listing_models ) ) {
+			foreach ( $listing_models as $model ) {
 				$html .= '<option value="' . (int) $model->term_id . '">' . esc_html( $model->name ) . '</option>';
 			}
 		}
@@ -280,19 +415,13 @@ final class Cadastro_Veiculos {
 		$html .= '<section class="cv-home-latest"><div class="cv-home-section-heading"><div><span class="cv-home-eyebrow">Novidades</span><h2>Últimos cadastros</h2></div><a href="' . esc_url( $archive ) . '">Ver todos</a></div>';
 		$latest = new WP_Query( array( 'post_type' => self::POST_TYPE, 'post_status' => 'publish', 'posts_per_page' => 6, 'orderby' => 'date', 'order' => 'DESC', 'meta_query' => self::public_vehicle_meta_query() ) );
 		if ( $latest->have_posts() ) {
-			$html .= '<div class="cv-home-cards">';
+			$html .= '<div class="mm-vehicle-grid">';
 			foreach ( $latest->posts as $vehicle ) {
-				$image = get_the_post_thumbnail_url( $vehicle, 'large' );
-				if ( ! $image ) {
-					$gallery = (array) get_post_meta( $vehicle->ID, '_cv_vehicle_gallery', true );
-					$image = ! empty( $gallery[0] ) ? wp_get_attachment_image_url( absint( $gallery[0] ), 'large' ) : '';
+				if ( function_exists( 'motors_marketplace_vehicle_card' ) ) {
+					ob_start();
+					motors_marketplace_vehicle_card( $vehicle->ID );
+					$html .= ob_get_clean();
 				}
-				$brand = wp_get_object_terms( $vehicle->ID, 'marca', array( 'fields' => 'names' ) );
-				$model = wp_get_object_terms( $vehicle->ID, 'modelo', array( 'fields' => 'names' ) );
-				$year = get_post_meta( $vehicle->ID, '_cv_ano_modelo', true );
-				$mileage = get_post_meta( $vehicle->ID, '_cv_quilometragem', true );
-				$price = get_post_meta( $vehicle->ID, '_cv_preco', true );
-				$html .= '<article class="cv-home-card"><a class="cv-home-card-image" href="' . esc_url( get_permalink( $vehicle ) ) . '">' . ( $image ? '<img src="' . esc_url( $image ) . '" alt="' . esc_attr( get_the_title( $vehicle ) ) . '" loading="lazy">' : '<span>Foto do veículo</span>' ) . '</a><div class="cv-home-card-body"><p>' . esc_html( implode( ' ', array_filter( array( is_array( $brand ) ? implode( ' ', $brand ) : '', is_array( $model ) ? implode( ' ', $model ) : '' ) ) ) ) . '</p><h3><a href="' . esc_url( get_permalink( $vehicle ) ) . '">' . esc_html( get_the_title( $vehicle ) ) . '</a></h3><div class="cv-home-card-meta">' . ( $year ? '<span>' . esc_html( $year ) . '</span>' : '' ) . ( $mileage ? '<span>' . esc_html( number_format_i18n( (int) $mileage ) ) . ' km</span>' : '' ) . '</div>' . ( $price ? '<strong class="cv-home-card-price">R$ ' . esc_html( number_format_i18n( (float) $price, 0 ) ) . '</strong>' : '' ) . '</div></article>';
 			}
 			$html .= '</div>';
 		} else {
@@ -312,11 +441,30 @@ final class Cadastro_Veiculos {
 			}
 		}
 		$html .= '</select></label><label>Ano de fabricação<input type="number" name="ano_fabricacao" min="1886" max="' . ( (int) current_time( 'Y' ) + 1 ) . '" placeholder="Ex.: 2020"></label><label>Ano modelo<input type="number" name="ano_modelo" min="1886" max="' . ( (int) current_time( 'Y' ) + 1 ) . '" placeholder="Ex.: 2021"></label><input type="hidden" name="iniciar_cadastro" value="1"><button type="submit">Continuar cadastro</button></form></section></div>';
-		wp_enqueue_script( 'cv-home', plugin_dir_url( __FILE__ ) . 'assets/home.js', array(), '1.0.0', true );
+		$home_script = plugin_dir_path( __FILE__ ) . 'assets/home.js';
+		wp_enqueue_script( 'cv-home', plugin_dir_url( __FILE__ ) . 'assets/home.js', array(), file_exists( $home_script ) ? (string) filemtime( $home_script ) : '1.0.0', true );
 		$term_data = self::all_term_data();
-		wp_localize_script( 'cv-home', 'CVHomeVehicleData', array( 'modelo' => $term_data['modelo'] ) );
-		wp_enqueue_style( 'cv-home', plugin_dir_url( __FILE__ ) . 'assets/home.css', array(), '1.0.0' );
+		wp_localize_script( 'cv-home', 'CVHomeVehicleData', array_intersect_key( $term_data, array_flip( array( 'marca', 'modelo', 'versao' ) ) ) );
+		$home_style = plugin_dir_path( __FILE__ ) . 'assets/home.css';
+		wp_enqueue_style( 'cv-home', plugin_dir_url( __FILE__ ) . 'assets/home.css', array(), file_exists( $home_style ) ? (string) filemtime( $home_style ) : '1.0.0' );
 		return $html;
+	}
+
+	private static function account_vehicle_title( $terms, $fields ) {
+		$parts = array();
+		foreach ( array( 'marca', 'modelo' ) as $taxonomy ) {
+			$term_id = isset( $terms[ $taxonomy ] ) ? absint( $terms[ $taxonomy ] ) : 0;
+			$term = $term_id ? get_term( $term_id, $taxonomy ) : false;
+			if ( $term && ! is_wp_error( $term ) ) {
+				$parts[] = $term->name;
+			}
+		}
+		$year = isset( $fields['ano_fabricacao'] ) ? absint( $fields['ano_fabricacao'] ) : 0;
+		if ( $year >= 1886 && $year <= (int) current_time( 'Y' ) + 1 ) {
+			$parts[] = (string) $year;
+		}
+		$title = sanitize_text_field( implode( ' ', $parts ) );
+		return $title ? $title : 'Veículo';
 	}
 
 	/** Process owner-only front-end vehicle create, update and delete actions. */
@@ -350,10 +498,9 @@ final class Cadastro_Veiculos {
 		if ( $vehicle_id && ( (int) get_post_field( 'post_author', $vehicle_id ) !== get_current_user_id() || self::POST_TYPE !== get_post_type( $vehicle_id ) ) ) {
 			return;
 		}
-		$title = isset( $_POST['cv_account_title'] ) ? sanitize_text_field( wp_unslash( $_POST['cv_account_title'] ) ) : '';
-		if ( '' === $title ) {
-			self::account_redirect( 'missing_title' );
-		}
+		$form_terms = isset( $_POST['cv_account_terms'] ) && is_array( $_POST['cv_account_terms'] ) ? wp_unslash( $_POST['cv_account_terms'] ) : array();
+		$form_fields = isset( $_POST['cv_account_fields'] ) && is_array( $_POST['cv_account_fields'] ) ? wp_unslash( $_POST['cv_account_fields'] ) : array();
+		$title = self::account_vehicle_title( $form_terms, $form_fields );
 		$vehicle = array(
 			'post_type' => self::POST_TYPE,
 			'post_title' => $title,
@@ -372,7 +519,7 @@ final class Cadastro_Veiculos {
 		if ( is_wp_error( $vehicle_id ) ) {
 			self::account_redirect( 'error' );
 		}
-		$fields = isset( $_POST['cv_account_fields'] ) && is_array( $_POST['cv_account_fields'] ) ? wp_unslash( $_POST['cv_account_fields'] ) : array();
+		$fields = $form_fields;
 		foreach ( array( 'ano_modelo', 'ano_fabricacao', 'quilometragem' ) as $key ) {
 			$value = isset( $fields[ $key ] ) ? absint( $fields[ $key ] ) : 0;
 			if ( in_array( $key, array( 'ano_modelo', 'ano_fabricacao' ), true ) && ( $value < 1886 || $value > (int) current_time( 'Y' ) + 1 ) ) {
@@ -382,7 +529,7 @@ final class Cadastro_Veiculos {
 		}
 		$price = isset( $fields['preco'] ) ? (float) str_replace( ',', '.', preg_replace( '/[^0-9,\.]/', '', sanitize_text_field( $fields['preco'] ) ) ) : 0;
 		$price > 0 ? update_post_meta( $vehicle_id, '_cv_preco', number_format( $price, 2, '.', '' ) ) : delete_post_meta( $vehicle_id, '_cv_preco' );
-		foreach ( array( 'motor', 'cor', 'combustivel', 'cambio' ) as $key ) {
+		foreach ( array( 'motor', 'cor', 'combustivel', 'cambio', 'estado_veiculo', 'portas' ) as $key ) {
 			$value = isset( $fields[ $key ] ) ? sanitize_text_field( $fields[ $key ] ) : '';
 			if ( 'cambio' === $key && ! in_array( $value, self::transmission_options(), true ) ) {
 				$value = '';
@@ -390,9 +537,18 @@ final class Cadastro_Veiculos {
 			if ( 'cor' === $key && ! in_array( $value, self::color_options(), true ) ) {
 				$value = '';
 			}
+			if ( 'combustivel' === $key && ! in_array( $value, self::fuel_options(), true ) ) {
+				$value = '';
+			}
+			if ( 'estado_veiculo' === $key && ! in_array( $value, self::condition_options(), true ) ) {
+				$value = '';
+			}
+			if ( 'portas' === $key && ! in_array( $value, self::door_options(), true ) ) {
+				$value = '';
+			}
 			'' !== $value ? update_post_meta( $vehicle_id, '_cv_' . $key, $value ) : delete_post_meta( $vehicle_id, '_cv_' . $key );
 		}
-		$terms = isset( $_POST['cv_account_terms'] ) && is_array( $_POST['cv_account_terms'] ) ? wp_unslash( $_POST['cv_account_terms'] ) : array();
+		$terms = $form_terms;
 		$type_id = isset( $terms['tipo_veiculo'] ) ? absint( $terms['tipo_veiculo'] ) : 0;
 		wp_set_object_terms( $vehicle_id, $type_id ? array( $type_id ) : array(), self::TYPE_TAX );
 		foreach ( array( 'marca', 'modelo', 'versao', 'estilo', 'opcionais' ) as $taxonomy ) {
@@ -492,12 +648,14 @@ final class Cadastro_Veiculos {
 		$phone = isset( $_POST['cv_contact_phone'] ) ? sanitize_text_field( wp_unslash( $_POST['cv_contact_phone'] ) ) : '';
 		$message = isset( $_POST['cv_contact_message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['cv_contact_message'] ) ) : '';
 		$author = get_userdata( (int) get_post_field( 'post_author', $vehicle_id ) );
-		$sent = $name && is_email( $email ) && $message && $author && is_email( $author->user_email );
+		$contact_allowed = apply_filters( 'cv_contact_form_allowed', true, $vehicle_id );
+		$sent = $contact_allowed && $name && is_email( $email ) && $message && $author && is_email( $author->user_email );
 		if ( $sent ) {
 			$subject = sprintf( 'Interesse no veÃ­culo: %s', get_the_title( $vehicle_id ) );
 			$body = "Nome: {$name}\nE-mail: {$email}\nTelefone/WhatsApp: {$phone}\n\nMensagem:\n{$message}";
 			$sent = wp_mail( $author->user_email, $subject, $body, array( 'Reply-To: ' . $email ) );
 		}
+		do_action( 'leads_record_email_submission', $vehicle_id, $name, $email, $phone, $message, $sent );
 		wp_safe_redirect( add_query_arg( 'contato_status', $sent ? 'sent' : 'error', $redirect ) . '#contato-anunciante' );
 		exit;
 	}
@@ -698,42 +856,88 @@ final class Cadastro_Veiculos {
 			}
 		}
 		$prefill_title = $editing ? $editing->post_title : implode( ' ', $prefill_names );
-		$html .= '<label>Nome do veículo<input required type="text" name="cv_account_title" value="' . esc_attr( $prefill_title ) . '"></label><label>Descrição<textarea name="cv_account_description" rows="4">' . esc_textarea( $editing ? $editing->post_content : '' ) . '</textarea></label>';
-		foreach ( array( self::TYPE_TAX => 'Tipo de veículo', 'marca' => 'Marca', 'modelo' => 'Modelo', 'versao' => 'Versão', 'estilo' => 'Estilo', 'opcionais' => 'Opcionais' ) as $taxonomy => $label ) {
-			$multiple = 'opcionais' === $taxonomy;
+		$html .= '<input type="hidden" name="cv_account_title" value="' . esc_attr( $prefill_title ) . '">';
+		$render_taxonomy = function( $taxonomy, $label, $multiple = false ) use ( $editing ) {
 			$selected = $editing ? wp_get_object_terms( $editing->ID, $taxonomy, array( 'fields' => 'ids' ) ) : array();
+			if ( is_wp_error( $selected ) ) {
+				$selected = array();
+			}
 			if ( ! $editing && ! empty( $_GET[ $taxonomy ] ) && in_array( $taxonomy, array( 'marca', 'modelo' ), true ) ) {
 				$selected = array( absint( wp_unslash( $_GET[ $taxonomy ] ) ) );
 			}
 			$terms = get_terms( array( 'taxonomy' => $taxonomy, 'hide_empty' => false ) );
-			$html .= '<label>' . esc_html( $label ) . '<select class="cv-account-term cv-term-select" data-taxonomy="' . esc_attr( $taxonomy ) . '" name="cv_account_terms[' . esc_attr( $taxonomy ) . ']' . ( $multiple ? '[]' : '' ) . '"' . ( $multiple ? ' multiple size="4"' : '' ) . '>' . ( $multiple ? '' : '<option value="">Selecione</option>' );
-			if ( ! is_wp_error( $terms ) ) {
+			if ( is_wp_error( $terms ) ) {
+				$terms = array();
+			}
+			if ( self::TYPE_TAX === $taxonomy ) {
+				$html = '<fieldset class="cv-account-type-field"><legend>' . esc_html( $label ) . '</legend><div class="cv-account-type-options">';
 				foreach ( $terms as $term ) {
-					$html .= '<option value="' . (int) $term->term_id . '" ' . selected( in_array( (int) $term->term_id, array_map( 'intval', $selected ), true ), true, false ) . '>' . esc_html( $term->name ) . '</option>';
+					$checked = in_array( (int) $term->term_id, array_map( 'intval', $selected ), true );
+					$html .= '<label><input class="cv-account-term cv-term-radio" type="radio" data-taxonomy="' . esc_attr( $taxonomy ) . '" name="cv_account_terms[' . esc_attr( $taxonomy ) . ']" value="' . (int) $term->term_id . '" ' . checked( $checked, true, false ) . '><span>' . esc_html( $term->name ) . '</span></label>';
 				}
+				return $html . '</div></fieldset>';
+			}
+			if ( $multiple ) {
+				$html = '<fieldset class="cv-account-options cv-field-full"><legend>' . esc_html( $label ) . '</legend><div class="cv-account-option-list" data-taxonomy="' . esc_attr( $taxonomy ) . '">';
+				foreach ( $terms as $term ) {
+					$checked = in_array( (int) $term->term_id, array_map( 'intval', $selected ), true );
+					$html .= '<label class="cv-account-option"><input class="cv-account-term cv-term-checkbox" type="checkbox" data-taxonomy="' . esc_attr( $taxonomy ) . '" name="cv_account_terms[' . esc_attr( $taxonomy ) . '][]" value="' . (int) $term->term_id . '" ' . checked( $checked, true, false ) . '><span>' . esc_html( $term->name ) . '</span></label>';
+				}
+				return $html . '</div></fieldset>';
+			}
+			$html = '<label class="cv-account-term-field">' . esc_html( $label );
+			if ( 'versao' === $taxonomy ) {
+				$html .= '<input class="cv-term-search" type="search" data-search-taxonomy="versao" placeholder="Pesquisar versão" autocomplete="off">';
+			}
+			$html .= '<select class="cv-account-term cv-term-select" data-taxonomy="' . esc_attr( $taxonomy ) . '" name="cv_account_terms[' . esc_attr( $taxonomy ) . ']">' . '<option value="">Selecione</option>';
+			foreach ( $terms as $term ) {
+				$chosen = in_array( (int) $term->term_id, array_map( 'intval', $selected ), true );
+				$html .= '<option value="' . (int) $term->term_id . '" ' . selected( $chosen, true, false ) . '>' . esc_html( $term->name ) . '</option>';
+			}
+			return $html . '</select></label>';
+		};
+		$render_account_select = function( $key, $label, $options, $value = '' ) {
+			$html = '<label>' . esc_html( $label ) . '<select name="cv_account_fields[' . esc_attr( $key ) . ']" data-placeholder="Selecione"><option value="">Selecione</option>';
+			if ( '' !== $value && ! in_array( (string) $value, $options, true ) ) {
+				$html .= '<option value="' . esc_attr( $value ) . '" selected>' . esc_html( $value ) . '</option>';
+			}
+			foreach ( $options as $option ) {
+				$html .= '<option value="' . esc_attr( $option ) . '" ' . selected( (string) $value, (string) $option, false ) . '>' . esc_html( $option ) . '</option>';
+			}
+			return $html . '</select></label>';
+		};
+		$html .= $render_taxonomy( self::TYPE_TAX, 'Tipo de Veículo' );
+		$field_value = $editing ? get_post_meta( $editing->ID, '_cv_preco', true ) : '';
+		$html .= '<label>Preço<input type="number" min="0" step="0.01" name="cv_account_fields[preco]" value="' . esc_attr( $field_value ) . '"></label>';
+		$field_value = $editing ? get_post_meta( $editing->ID, '_cv_estado_veiculo', true ) : '';
+		$html .= $render_account_select( 'estado_veiculo', 'Novo ou Usado', self::condition_options(), $field_value );
+		$html .= $render_taxonomy( 'marca', 'Marca' );
+		$html .= $render_taxonomy( 'modelo', 'Modelo' );
+		$html .= $render_taxonomy( 'versao', 'Versão' );
+		$field_value = $editing ? get_post_meta( $editing->ID, '_cv_motor', true ) : '';
+		$html .= $render_account_select( 'motor', 'Motor', self::motor_options(), $field_value );
+		$year_max = (int) current_time( 'Y' ) + 1;
+		foreach ( array( 'ano_modelo' => 'Ano Modelo', 'ano_fabricacao' => 'Ano Fabricação' ) as $key => $label ) {
+			$field_value = $editing ? get_post_meta( $editing->ID, '_cv_' . $key, true ) : ( isset( $_GET[ $key ] ) ? absint( wp_unslash( $_GET[ $key ] ) ) : '' );
+			$html .= '<label>' . esc_html( $label ) . '<select name="cv_account_fields[' . esc_attr( $key ) . ']" data-placeholder="Selecione"><option value="">Selecione</option>';
+			for ( $year = $year_max; $year >= 1886; $year-- ) {
+				$html .= '<option value="' . $year . '" ' . selected( (string) $field_value, (string) $year, false ) . '>' . $year . '</option>';
 			}
 			$html .= '</select></label>';
 		}
-		$fields = array( 'ano_modelo' => 'Ano modelo', 'ano_fabricacao' => 'Ano de fabricação', 'motor' => 'Motor / potência', 'preco' => 'Preço', 'cor' => 'Cor', 'quilometragem' => 'Quilometragem', 'combustivel' => 'Combustível' );
-		foreach ( $fields as $key => $label ) {
-			$field_value = $editing ? get_post_meta( $editing->ID, '_cv_' . $key, true ) : ( isset( $_GET[ $key ] ) && in_array( $key, array( 'ano_modelo', 'ano_fabricacao' ), true ) ? absint( wp_unslash( $_GET[ $key ] ) ) : '' );
-			if ( in_array( $key, array( 'ano_modelo', 'ano_fabricacao' ), true ) ) {
-				$html .= '<label>' . esc_html( $label ) . '<select name="cv_account_fields[' . esc_attr( $key ) . ']" data-placeholder="Selecione"><option value="">Selecione</option>';
-				for ( $year = (int) current_time( 'Y' ) + 1; $year >= 1886; $year-- ) {
-					$html .= '<option value="' . $year . '" ' . selected( (string) $field_value, (string) $year, false ) . '>' . $year . '</option>';
-				}
-				$html .= '</select></label>';
-			} elseif ( 'cor' === $key ) {
-				$html .= '<label>' . esc_html( $label ) . '<select name="cv_account_fields[cor]"><option value="">Selecione</option>';
-				foreach ( self::color_options() as $color ) {
-					$html .= '<option value="' . esc_attr( $color ) . '" ' . selected( $field_value, $color, false ) . '>' . esc_html( $color ) . '</option>';
-				}
-				$html .= '</select></label>';
-			} else {
-				$type = 'quilometragem' === $key ? 'number' : 'text';
-				$html .= '<label>' . esc_html( $label ) . '<input type="' . $type . '" name="cv_account_fields[' . esc_attr( $key ) . ']" value="' . esc_attr( $field_value ) . '"' . ( 'number' === $type ? ' min="0"' : '' ) . '></label>';
-			}
-		}
+		$field_value = $editing ? get_post_meta( $editing->ID, '_cv_quilometragem', true ) : '';
+		$html .= '<label>Km<input type="number" min="0" name="cv_account_fields[quilometragem]" value="' . esc_attr( $field_value ) . '"></label>';
+		$field_value = $editing ? get_post_meta( $editing->ID, '_cv_cambio', true ) : '';
+		$html .= $render_account_select( 'cambio', 'Câmbio', self::transmission_options(), $field_value );
+		$field_value = $editing ? get_post_meta( $editing->ID, '_cv_combustivel', true ) : '';
+		$html .= $render_account_select( 'combustivel', 'Combustível', self::fuel_options(), $field_value );
+		$html .= $render_taxonomy( 'estilo', 'Estilo' );
+		$field_value = $editing ? get_post_meta( $editing->ID, '_cv_cor', true ) : '';
+		$html .= $render_account_select( 'cor', 'Cor', self::color_options(), $field_value );
+		$field_value = $editing ? get_post_meta( $editing->ID, '_cv_portas', true ) : '';
+		$html .= $render_account_select( 'portas', 'Portas', self::door_options(), $field_value );
+		$html .= $render_taxonomy( 'opcionais', 'Opcionais', true );
+		$html .= '<label class="cv-field-full">Observações<textarea name="cv_account_description" rows="5">' . esc_textarea( $editing ? $editing->post_content : '' ) . '</textarea></label>';
 		$gallery = $editing ? array_values( array_filter( array_map( 'absint', (array) get_post_meta( $editing->ID, '_cv_vehicle_gallery', true ) ) ) ) : array();
 		$html .= '<fieldset class="cv-account-gallery"><legend>Fotos do veículo (até 12)</legend>' . wp_nonce_field( 'cv_account_gallery_' . ( $editing ? $editing->ID : 0 ), 'cv_account_gallery_nonce', true, false ) . '<input type="hidden" id="cv_gallery_ids" name="cv_account_gallery_ids" value="' . esc_attr( implode( ',', $gallery ) ) . '"><ul class="cv-gallery-list" id="cv_gallery_list">';
 		foreach ( $gallery as $image_id ) {
@@ -743,21 +947,18 @@ final class Cadastro_Veiculos {
 			}
 		}
 		$html .= '</ul><button type="button" class="cv-account-button" id="cv_gallery_add">Selecionar fotos</button><span class="cv-gallery-count">' . count( $gallery ) . ' / 12</span></fieldset>';
-		$selected_transmission = $editing ? get_post_meta( $editing->ID, '_cv_cambio', true ) : '';
-		$html .= '<label>Câmbio<select name="cv_account_fields[cambio]"><option value="">Selecione</option>';
-		foreach ( self::transmission_options() as $transmission ) {
-			$html .= '<option value="' . esc_attr( $transmission ) . '" ' . selected( $selected_transmission, $transmission, false ) . '>' . esc_html( $transmission ) . '</option>';
-		}
-		$html .= '</select></label><button class="cv-account-button" type="submit">' . ( $editing ? 'Salvar alterações' : 'Cadastrar veículo' ) . '</button>';
+		$html .= '<button class="cv-account-button cv-field-full" type="submit">' . ( $editing ? 'Salvar alterações' : 'Cadastrar veículo' ) . '</button>';
 		if ( $editing ) {
 			$html .= ' <a href="' . esc_url( remove_query_arg( 'editar_veiculo' ) ) . '">Cancelar</a>';
 		}
 		$html .= '</form></section></div><div class="cv-account-tab-panel" id="cv-main-panel-profile" role="tabpanel" aria-labelledby="cv-main-tab-profile"' . ( $profile_active ? '' : ' hidden' ) . '>' . self::render_account_profile( $user_id ) . '</div></div>';
 		self::enqueue_account_vehicle_actions();
-		wp_enqueue_script( 'cv-account', plugin_dir_url( __FILE__ ) . 'assets/account.js', array(), '1.0.0', true );
+		$account_script = plugin_dir_path( __FILE__ ) . 'assets/account.js';
+		wp_enqueue_script( 'cv-account', plugin_dir_url( __FILE__ ) . 'assets/account.js', array(), file_exists( $account_script ) ? (string) filemtime( $account_script ) : '1.0.0', true );
 		wp_enqueue_script( 'cv-account-tabs', plugin_dir_url( __FILE__ ) . 'assets/account-tabs.js', array(), '1.0.0', true );
 		wp_localize_script( 'cv-account', 'CVVehicleData', self::all_term_data() );
-		wp_enqueue_script( 'cv-admin', plugin_dir_url( __FILE__ ) . 'assets/admin.js', array( 'jquery', 'jquery-ui-sortable' ), '1.2.0', true );
+		$admin_script = plugin_dir_path( __FILE__ ) . 'assets/admin.js';
+		wp_enqueue_script( 'cv-admin', plugin_dir_url( __FILE__ ) . 'assets/admin.js', array( 'jquery', 'jquery-ui-sortable' ), file_exists( $admin_script ) ? (string) filemtime( $admin_script ) : '1.2.0', true );
 		wp_enqueue_media();
 		wp_enqueue_style( 'cv-account', plugin_dir_url( __FILE__ ) . 'assets/account.css', array(), (string) filemtime( plugin_dir_path( __FILE__ ) . 'assets/account.css' ) );
 		return $html;
@@ -793,6 +994,7 @@ final class Cadastro_Veiculos {
 				'rewrite' => array( 'slug' => sanitize_title( $config['label'] ) ),
 			) );
 		}
+
 	}
 
 	public static function ensure_account_page() {
@@ -897,6 +1099,7 @@ final class Cadastro_Veiculos {
 				$data[ $taxonomy ][] = array(
 					'id' => (int) $term->term_id,
 					'name' => $term->name,
+					'count' => (int) $term->count,
 					'types' => array_map( 'intval', (array) get_term_meta( $term->term_id, self::META_TYPES, true ) ),
 					'parent' => (int) get_term_meta( $term->term_id, self::META_PARENT, true ),
 				);
@@ -907,68 +1110,44 @@ final class Cadastro_Veiculos {
 
 	public static function render_vehicle_meta_box( $post ) {
 		wp_nonce_field( 'cv_save_vehicle', 'cv_vehicle_nonce' );
-		$fields = array(
-			'ano_modelo' => array( 'Ano Modelo', 'number' ),
-			'ano_fabricacao' => array( 'Ano de Fabricação', 'number' ),
-			'motor' => array( 'Motor / Potência', 'text', 'Ex.: 1.6' ),
-			'preco' => array( 'Preço', 'number' ),
-			'cor' => array( 'Cor', 'text', 'Ex.: Branco, Preto, Prata' ),
-			'quilometragem' => array( 'Quilometragem', 'number' ),
-			'combustivel' => array( 'Combustível', 'text', 'Ex.: Flex, Gasolina, Diesel' ),
-		);
 		echo '<div class="cv-vehicle-fields">';
 		self::render_term_select( 'tipo_veiculo', 'Tipo de Veículo', $post->ID, false, self::TYPE_TAX );
+		$value = get_post_meta( $post->ID, '_cv_preco', true );
+		echo '<p><label for="cv_preco"><strong>Preço</strong></label><br><input class="widefat" id="cv_preco" name="cv_fields[preco]" type="number" min="0" step="0.01" value="' . esc_attr( $value ) . '"></p>';
+		$select_field = function( $key, $label, $options ) use ( $post ) {
+			$value = get_post_meta( $post->ID, '_cv_' . $key, true );
+			echo '<p><label for="cv_' . esc_attr( $key ) . '"><strong>' . esc_html( $label ) . '</strong></label><br><select class="widefat" id="cv_' . esc_attr( $key ) . '" name="cv_fields[' . esc_attr( $key ) . ']" style="max-width:100%"><option value="">Selecione</option>';
+			if ( '' !== $value && ! in_array( (string) $value, $options, true ) ) {
+				echo '<option value="' . esc_attr( $value ) . '" selected>' . esc_html( $value ) . '</option>';
+			}
+			foreach ( $options as $option ) {
+				echo '<option value="' . esc_attr( $option ) . '" ' . selected( (string) $value, (string) $option, false ) . '>' . esc_html( $option ) . '</option>';
+			}
+			echo '</select></p>';
+		};
+		$select_field( 'estado_veiculo', 'Novo ou Usado', self::condition_options() );
 		self::render_term_select( 'marca', 'Marca', $post->ID, false, 'marca' );
 		self::render_term_select( 'modelo', 'Modelo', $post->ID, false, 'modelo' );
 		self::render_term_select( 'versao', 'Versão', $post->ID, false, 'versao' );
-		self::render_term_select( 'estilo', 'Estilo', $post->ID, false, 'estilo' );
+		$select_field( 'motor', 'Motor', self::motor_options() );
 		$year_max = (int) current_time( 'Y' ) + 1;
-		echo '<datalist id="cv-year-options">';
-		for ( $year = $year_max; $year >= 2000; $year-- ) {
-			echo '<option value="' . $year . '"></option>';
-		}
-		echo '</datalist><datalist id="cv-color-options">';
-		foreach ( self::color_options() as $color ) {
-			echo '<option value="' . esc_attr( $color ) . '"></option>';
-		}
-		echo '</datalist><datalist id="cv-fuel-options"><option value="Flex"><option value="Gasolina"><option value="Etanol"><option value="Diesel"><option value="Elétrico"><option value="Híbrido"><option value="GNV"></datalist>';
-		foreach ( $fields as $key => $field ) {
+		foreach ( array( 'ano_modelo' => 'Ano Modelo', 'ano_fabricacao' => 'Ano Fabricação' ) as $key => $label ) {
 			$value = get_post_meta( $post->ID, '_cv_' . $key, true );
-			if ( in_array( $key, array( 'ano_modelo', 'ano_fabricacao' ), true ) ) {
-				echo '<p><label for="cv_' . esc_attr( $key ) . '"><strong>' . esc_html( $field[0] ) . '</strong></label><br><select class="regular-text" id="cv_' . esc_attr( $key ) . '" name="cv_fields[' . esc_attr( $key ) . ']" style="max-width:100%"><option value="">Selecione</option>';
-				for ( $year = $year_max; $year >= 1886; $year-- ) {
-					echo '<option value="' . $year . '" ' . selected( (string) $value, (string) $year, false ) . '>' . $year . '</option>';
-				}
-				echo '</select></p>';
-				continue;
+			echo '<p><label for="cv_' . esc_attr( $key ) . '"><strong>' . esc_html( $label ) . '</strong></label><br><select class="widefat" id="cv_' . esc_attr( $key ) . '" name="cv_fields[' . esc_attr( $key ) . ']" style="max-width:100%"><option value="">Selecione</option>';
+			for ( $year = $year_max; $year >= 1886; $year-- ) {
+				echo '<option value="' . $year . '" ' . selected( (string) $value, (string) $year, false ) . '>' . $year . '</option>';
 			}
-			if ( 'cor' === $key ) {
-				echo '<p><label for="cv_cor"><strong>' . esc_html( $field[0] ) . '</strong></label><br><select class="regular-text" id="cv_cor" name="cv_fields[cor]" style="max-width:100%"><option value="">Selecione</option>';
-				foreach ( self::color_options() as $color ) {
-					echo '<option value="' . esc_attr( $color ) . '" ' . selected( $value, $color, false ) . '>' . esc_html( $color ) . '</option>';
-				}
-				echo '</select></p>';
-				continue;
-			}
-			$step = 'preco' === $key ? '0.01' : '1';
-			$min = 'number' === $field[1] ? ' min="0" step="' . $step . '"' : '';
-			if ( in_array( $key, array( 'ano_modelo', 'ano_fabricacao' ), true ) ) {
-				$min = ' min="1886" max="' . $year_max . '" step="1" list="cv-year-options"';
-			}
-			if ( 'cor' === $key || 'combustivel' === $key ) {
-				$min = ' list="' . ( 'cor' === $key ? 'cv-color-options' : 'cv-fuel-options' ) . '" maxlength="60"';
-			}
-			$placeholder = isset( $field[2] ) ? ' placeholder="' . esc_attr( $field[2] ) . '"' : '';
-			echo '<p><label for="cv_' . esc_attr( $key ) . '"><strong>' . esc_html( $field[0] ) . '</strong></label><br><input class="regular-text" id="cv_' . esc_attr( $key ) . '" name="cv_fields[' . esc_attr( $key ) . ']" type="' . esc_attr( $field[1] ) . '" value="' . esc_attr( $value ) . '"' . $min . $placeholder . '></p>';
+			echo '</select></p>';
 		}
-		$value = get_post_meta( $post->ID, '_cv_cambio', true );
-		echo '<p><label for="cv_cambio"><strong>Câmbio</strong></label><br><select id="cv_cambio" name="cv_fields[cambio]"><option value="">Selecione</option>';
-		foreach ( self::transmission_options() as $option ) {
-			echo '<option value="' . esc_attr( $option ) . '" ' . selected( $value, $option, false ) . '>' . esc_html( $option ) . '</option>';
-		}
-		echo '</select></p>';
+		$value = get_post_meta( $post->ID, '_cv_quilometragem', true );
+		echo '<p><label for="cv_quilometragem"><strong>Km</strong></label><br><input class="widefat" id="cv_quilometragem" name="cv_fields[quilometragem]" type="number" min="0" value="' . esc_attr( $value ) . '"></p>';
+		$select_field( 'cambio', 'Câmbio', self::transmission_options() );
+		$select_field( 'combustivel', 'Combustível', self::fuel_options() );
+		self::render_term_select( 'estilo', 'Estilo', $post->ID, false, 'estilo' );
+		$select_field( 'cor', 'Cor', self::color_options() );
+		$select_field( 'portas', 'Portas', self::door_options() );
 		self::render_term_select( 'opcionais', 'Opcionais', $post->ID, true, 'opcionais' );
-		echo '</div><p class="description">As listas são filtradas pelas relações configuradas nos cadastros das taxonomias.</p>';
+		echo '</div><p class="description">As listas são filtradas pelas relações configuradas nos cadastros das taxonomias. A descrição e as observações ficam no editor do veículo.</p>';
 	}
 
 	private static function render_term_select( $name, $label, $post_id, $multiple, $taxonomy ) {
@@ -980,9 +1159,31 @@ final class Cadastro_Veiculos {
 		if ( is_wp_error( $terms ) ) {
 			$terms = array();
 		}
+		if ( self::TYPE_TAX === $taxonomy ) {
+			echo '<fieldset class="cv-vehicle-type-field" data-taxonomy="' . esc_attr( $taxonomy ) . '"><legend><strong>' . esc_html( $label ) . '</strong></legend><div class="cv-vehicle-type-options">';
+			foreach ( $terms as $term ) {
+				$chosen = in_array( (int) $term->term_id, array_map( 'intval', $selected ), true );
+				echo '<label><input class="cv-term-select cv-term-radio" type="radio" data-taxonomy="' . esc_attr( $taxonomy ) . '" name="cv_terms[' . esc_attr( $name ) . ']" value="' . (int) $term->term_id . '" ' . checked( $chosen, true, false ) . '> ' . esc_html( $term->name ) . '</label>';
+			}
+			echo '</div></fieldset>';
+			return;
+		}
+		if ( $multiple && 'opcionais' === $name ) {
+			echo '<fieldset class="cv-vehicle-options" data-taxonomy="' . esc_attr( $taxonomy ) . '"><legend><strong>' . esc_html( $label ) . '</strong></legend><div class="cv-vehicle-option-list">';
+			foreach ( $terms as $term ) {
+				$chosen = in_array( (int) $term->term_id, array_map( 'intval', $selected ), true );
+				echo '<label><input class="cv-term-select cv-term-checkbox" type="checkbox" data-taxonomy="' . esc_attr( $taxonomy ) . '" name="cv_terms[' . esc_attr( $name ) . '][]" value="' . (int) $term->term_id . '" ' . checked( $chosen, true, false ) . '> ' . esc_html( $term->name ) . '</label>';
+			}
+			echo '</div></fieldset>';
+			return;
+		}
 		$multiple_attr = $multiple ? ' multiple size="5"' : '';
 		$input_name = $multiple ? 'cv_terms[' . $name . '][]' : 'cv_terms[' . $name . ']';
-		echo '<p><label for="cv_term_' . esc_attr( $name ) . '"><strong>' . esc_html( $label ) . '</strong></label><br><select class="widefat cv-term-select" id="cv_term_' . esc_attr( $name ) . '" name="' . esc_attr( $input_name ) . '" data-taxonomy="' . esc_attr( $taxonomy ) . '"' . $multiple_attr . '>';
+		echo '<p><label for="cv_term_' . esc_attr( $name ) . '"><strong>' . esc_html( $label ) . '</strong></label><br>';
+		if ( 'versao' === $name ) {
+			echo '<input class="widefat cv-term-search" type="search" data-search-taxonomy="versao" placeholder="Pesquisar versão" autocomplete="off">';
+		}
+		echo '<select class="widefat cv-term-select" id="cv_term_' . esc_attr( $name ) . '" name="' . esc_attr( $input_name ) . '" data-taxonomy="' . esc_attr( $taxonomy ) . '"' . $multiple_attr . '>';
 		if ( ! $multiple ) {
 			echo '<option value="">Selecione</option>';
 		}
@@ -1086,9 +1287,18 @@ final class Cadastro_Veiculos {
 		} else {
 			delete_post_meta( $post_id, '_cv_preco' );
 		}
-		foreach ( array( 'motor', 'cor', 'combustivel', 'cambio' ) as $key ) {
+		foreach ( array( 'motor', 'cor', 'combustivel', 'cambio', 'estado_veiculo', 'portas' ) as $key ) {
 			$value = isset( $fields[ $key ] ) ? sanitize_text_field( $fields[ $key ] ) : '';
 			if ( 'cor' === $key && ! in_array( $value, self::color_options(), true ) ) {
+				$value = '';
+			}
+			if ( 'combustivel' === $key && ! in_array( $value, self::fuel_options(), true ) ) {
+				$value = '';
+			}
+			if ( 'estado_veiculo' === $key && ! in_array( $value, self::condition_options(), true ) ) {
+				$value = '';
+			}
+			if ( 'portas' === $key && ! in_array( $value, self::door_options(), true ) ) {
 				$value = '';
 			}
 			if ( 'cambio' === $key && ! in_array( $value, self::transmission_options(), true ) ) {
@@ -1115,11 +1325,50 @@ final class Cadastro_Veiculos {
 		}
 	}
 
+	public static function add_vehicle_type_column( $columns ) {
+		$updated_columns = array();
+		foreach ( $columns as $key => $label ) {
+			$updated_columns[ $key ] = $label;
+			if ( 'name' === $key ) {
+				$updated_columns['cv_vehicle_type'] = 'Tipo de veículo';
+			}
+		}
+		return $updated_columns;
+	}
+
+	public static function render_vehicle_type_column( $content, $column_name, $term_id ) {
+		if ( 'cv_vehicle_type' !== $column_name ) {
+			return $content;
+		}
+
+		$term = get_term( $term_id );
+		if ( ! $term || is_wp_error( $term ) ) {
+			return '&mdash;';
+		}
+
+		$type_ids = array_map( 'absint', (array) get_term_meta( $term_id, self::META_TYPES, true ) );
+		if ( empty( $type_ids ) && ! empty( self::$taxonomies[ $term->taxonomy ]['parent'] ) ) {
+			$parent_id = absint( get_term_meta( $term_id, self::META_PARENT, true ) );
+			if ( $parent_id ) {
+				$type_ids = array_map( 'absint', (array) get_term_meta( $parent_id, self::META_TYPES, true ) );
+			}
+		}
+
+		$type_names = array();
+		foreach ( array_unique( $type_ids ) as $type_id ) {
+			$type = get_term( $type_id, self::TYPE_TAX );
+			if ( $type && ! is_wp_error( $type ) ) {
+				$type_names[] = esc_html( $type->name );
+			}
+		}
+
+		return $type_names ? implode( ', ', $type_names ) : '&mdash;';
+	}
+
 	public static function term_add_fields( $taxonomy ) {
 		$config = isset( self::$taxonomies[ $taxonomy ] ) ? self::$taxonomies[ $taxonomy ] : array( 'parent' => '' );
-		if ( self::TYPE_TAX === $taxonomy ) {
-			wp_nonce_field( 'cv_save_term', 'cv_term_nonce' );
-		} else {
+		wp_nonce_field( 'cv_save_term', 'cv_term_nonce' );
+		if ( self::TYPE_TAX !== $taxonomy ) {
 			self::render_type_term_field( array(), 'add' );
 		}
 		if ( ! empty( $config['parent'] ) ) {
@@ -1131,9 +1380,8 @@ final class Cadastro_Veiculos {
 	public static function term_edit_fields( $term ) {
 		$taxonomy = $term->taxonomy;
 		$config = isset( self::$taxonomies[ $taxonomy ] ) ? self::$taxonomies[ $taxonomy ] : array( 'parent' => '' );
-		if ( self::TYPE_TAX === $taxonomy ) {
-			wp_nonce_field( 'cv_save_term', 'cv_term_nonce' );
-		} else {
+		wp_nonce_field( 'cv_save_term', 'cv_term_nonce' );
+		if ( self::TYPE_TAX !== $taxonomy ) {
 			self::render_type_term_field( (array) get_term_meta( $term->term_id, self::META_TYPES, true ), 'edit' );
 		}
 		if ( ! empty( $config['parent'] ) ) {
@@ -1241,13 +1489,21 @@ final class Cadastro_Veiculos {
 		if ( ! $screen ) {
 			return;
 		}
+		$admin_script = plugin_dir_path( __FILE__ ) . 'assets/admin.js';
+		$admin_script_version = file_exists( $admin_script ) ? (string) filemtime( $admin_script ) : '1.2.0';
+		$admin_style = plugin_dir_path( __FILE__ ) . 'assets/admin.css';
+		$admin_style_version = file_exists( $admin_style ) ? (string) filemtime( $admin_style ) : '1.2.0';
+		if ( 'toplevel_page_cv-leads' === $screen->id ) {
+			$leads_style = plugin_dir_path( __FILE__ ) . 'assets/leads-admin.css';
+			wp_enqueue_style( 'cv-leads-admin', plugin_dir_url( __FILE__ ) . 'assets/leads-admin.css', array(), file_exists( $leads_style ) ? (string) filemtime( $leads_style ) : '1.0.0' );
+		}
 		if ( self::POST_TYPE === $screen->post_type && in_array( $screen->base, array( 'post', 'post-new' ), true ) ) {
-			wp_enqueue_script( 'cv-admin', plugin_dir_url( __FILE__ ) . 'assets/admin.js', array( 'jquery', 'jquery-ui-sortable' ), '1.2.0', true );
+			wp_enqueue_script( 'cv-admin', plugin_dir_url( __FILE__ ) . 'assets/admin.js', array( 'jquery', 'jquery-ui-sortable' ), $admin_script_version, true );
 			wp_localize_script( 'cv-admin', 'CVVehicleData', self::all_term_data() );
-			wp_enqueue_style( 'cv-admin', plugin_dir_url( __FILE__ ) . 'assets/admin.css', array(), '1.2.0' );
+			wp_enqueue_style( 'cv-admin', plugin_dir_url( __FILE__ ) . 'assets/admin.css', array(), $admin_style_version );
 		}
 		if ( in_array( $screen->taxonomy, array_merge( array( self::TYPE_TAX ), array_keys( self::$taxonomies ) ), true ) ) {
-			wp_enqueue_script( 'cv-admin', plugin_dir_url( __FILE__ ) . 'assets/admin.js', array(), '1.2.0', true );
+			wp_enqueue_script( 'cv-admin', plugin_dir_url( __FILE__ ) . 'assets/admin.js', array(), $admin_script_version, true );
 			wp_localize_script( 'cv-admin', 'CVVehicleData', self::all_term_data() );
 		}
 	}
