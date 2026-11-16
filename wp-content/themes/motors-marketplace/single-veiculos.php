@@ -24,9 +24,13 @@ $fields = array(
 $price = get_post_meta( $post_id, '_cv_preco', true );
 $author_id = (int) get_post_field( 'post_author', $post_id );
 $advertiser = get_userdata( $author_id );
-$advertiser_name = $advertiser && $advertiser->display_name ? $advertiser->display_name : 'Loja Exemplo';
-$whatsapp = get_user_meta( $author_id, 'cv_whatsapp', true );
-$phone = get_user_meta( $author_id, 'cv_telefone', true );
+$source_url = get_post_meta( $post_id, '_cv_source_url', true );
+$advertiser_name = get_post_meta( $post_id, '_cv_advertiser_name', true );
+$advertiser_name = $advertiser_name ? $advertiser_name : ( $advertiser && $advertiser->display_name ? $advertiser->display_name : 'Loja Exemplo' );
+$whatsapp = get_post_meta( $post_id, '_cv_advertiser_whatsapp', true );
+$whatsapp = $whatsapp ? $whatsapp : get_user_meta( $author_id, 'cv_whatsapp', true );
+$phone = get_post_meta( $post_id, '_cv_advertiser_phone', true );
+$phone = $phone ? $phone : get_user_meta( $author_id, 'cv_telefone', true );
 $has_whatsapp = ! empty( $whatsapp );
 $has_phone = ! empty( $phone );
 $whatsapp = $has_whatsapp ? $whatsapp : '(00) 00000-0000';
@@ -68,7 +72,7 @@ $contact_status = isset( $_GET['contato_status'] ) ? sanitize_key( wp_unslash( $
 					<?php if ( $has_whatsapp ) : ?><a class="mm-contact-channel mm-contact-whatsapp" data-cv-whatsapp-trigger href="https://wa.me/<?php echo esc_attr( preg_replace( '/\D+/', '', $whatsapp ) ); ?>" target="_blank" rel="noopener"><svg aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a9.8 9.8 0 0 0-8.4 14.9L2.3 22l5.3-1.4A10 10 0 1 0 12 2Zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-3.1.8.8-3-.2-.3A8 8 0 1 1 12 20Zm4.4-6c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.5.1-.6.8-.8.9-.3.2-.5.1a6.6 6.6 0 0 1-2-1.2 7.4 7.4 0 0 1-1.4-1.7c-.1-.2 0-.3.1-.4l.4-.5.2-.4c.1-.1 0-.3 0-.4l-.8-1.9c-.2-.5-.4-.4-.5-.4h-.5c-.2 0-.4.1-.6.3s-.8.8-.8 1.9.8 2.2.9 2.4a9.5 9.5 0 0 0 3.7 3.3c.5.2.9.4 1.2.5.5.2 1 .2 1.3.1.4-.1 1.5-.6 1.7-1.2s.2-1 .2-1.1-.2-.2-.4-.3Z"/></svg><span><?php echo esc_html( $whatsapp ); ?></span></a><?php else : ?><span class="mm-contact-channel mm-contact-whatsapp is-unavailable" title="Número fictício para demonstração"><svg aria-hidden="true" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a9.8 9.8 0 0 0-8.4 14.9L2.3 22l5.3-1.4A10 10 0 1 0 12 2Zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-3.1.8.8-3-.2-.3A8 8 0 1 1 12 20Zm4.4-6c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.5.1-.6.8-.8.9-.3.2-.5.1a6.6 6.6 0 0 1-2-1.2 7.4 7.4 0 0 1-1.4-1.7c-.1-.2 0-.3.1-.4l.4-.5.2-.4c.1-.1 0-.3 0-.4l-.8-1.9c-.2-.5-.4-.4-.5-.4h-.5c-.2 0-.4.1-.6.3s-.8.8-.8 1.9.8 2.2.9 2.4a9.5 9.5 0 0 0 3.7 3.3c.5.2.9.4 1.2.5.5.2 1 .2 1.3.1.4-.1 1.5-.6 1.7-1.2s.2-1 .2-1.1-.2-.2-.4-.3Z"/></svg><span><?php echo esc_html( $whatsapp ); ?></span></span><?php endif; ?>
 				</div>
 				</section>
-				<section class="mm-contact-card mm-contact-form-card">
+				<?php if ( $source_url ) : ?><section class="mm-contact-card mm-contact-form-card"><h2>Fale com o anunciante</h2><p>Consulte a disponibilidade e os detalhes atualizados diretamente na loja.</p><a class="mm-button" href="<?php echo esc_url( $source_url ); ?>" target="_blank" rel="noopener noreferrer">Ver anúncio na loja</a></section><?php else : ?><section class="mm-contact-card mm-contact-form-card">
 				<?php if ( 'sent' === $contact_status ) : ?><p class="mm-contact-notice" role="status">Mensagem enviada. O anunciante poderá responder pelo e-mail informado.</p><?php elseif ( 'error' === $contact_status ) : ?><p class="mm-contact-error" role="alert">Não foi possível enviar. Confira os dados e tente novamente.</p><?php endif; ?>
 				<div class="mm-contact-form-wrap"><form class="mm-contact-form" method="post" action="<?php echo esc_url( get_permalink( $post_id ) . '#contato-anunciante' ); ?>">
 					<?php wp_nonce_field( 'cv_vehicle_contact_' . $post_id, 'cv_vehicle_contact_nonce' ); ?>
@@ -79,7 +83,7 @@ $contact_status = isset( $_GET['contato_status'] ) ? sanitize_key( wp_unslash( $
 					<label>Mensagem<textarea name="cv_contact_message" rows="4" required></textarea></label>
 					<button class="mm-button" type="submit" name="cv_vehicle_contact_submit" value="1">Enviar mensagem</button>
 				</form></div>
-				</section>
+				</section><?php endif; ?>
 			</aside>
 		</div>
 		<?php if ( $has_whatsapp ) : ?><div class="mm-lead-modal" data-cv-whatsapp-modal hidden aria-hidden="true"><div class="mm-lead-modal-backdrop" data-cv-modal-close></div><section class="mm-lead-modal-panel" role="dialog" aria-modal="true" aria-labelledby="mm-lead-modal-title"><button class="mm-lead-modal-close" type="button" data-cv-modal-close aria-label="Fechar">&times;</button><p class="mm-lead-modal-eyebrow">Contato</p><h2 id="mm-lead-modal-title">Falar com <?php echo esc_html( $advertiser_name ); ?></h2><form data-cv-whatsapp-form><input type="hidden" name="vehicle_id" value="<?php echo (int) $post_id; ?>"><input type="hidden" name="record_id" value=""><label>Seu Nome<input type="text" name="name" autocomplete="name" placeholder="Nome" required></label><label>Seu Email<input type="email" name="email" autocomplete="email" placeholder="Email" required></label><label>Seu WhatsApp<input type="tel" name="phone" autocomplete="tel" placeholder="WhatsApp" required></label><p class="mm-lead-modal-error" data-cv-lead-error role="alert" hidden></p><button class="mm-lead-whatsapp-submit" type="submit">Falar pelo WhatsApp</button></form></section></div><?php endif; ?>
