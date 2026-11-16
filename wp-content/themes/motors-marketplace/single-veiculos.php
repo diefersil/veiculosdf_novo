@@ -3,8 +3,12 @@ get_header();
 the_post();
 $post_id = get_the_ID();
 $gallery = array_values( array_filter( array_map( 'absint', (array) get_post_meta( $post_id, '_cv_vehicle_gallery', true ) ) ) );
+$gallery = motors_marketplace_order_imported_gallery( $gallery );
 $featured_image_id = (int) get_post_thumbnail_id( $post_id );
-$gallery_image_ids = array_values( array_unique( array_filter( array_merge( $featured_image_id ? array( $featured_image_id ) : array(), $gallery ) ) ) );
+$gallery_image_ids = array_values( array_unique( array_filter( $gallery ) ) );
+if ( $featured_image_id && ! in_array( $featured_image_id, $gallery_image_ids, true ) ) {
+	array_unshift( $gallery_image_ids, $featured_image_id );
+}
 $gallery_image_ids = array_values( array_filter( $gallery_image_ids, function( $image_id ) {
 	return wp_get_attachment_image_src( $image_id, 'large' ) && wp_get_attachment_image_url( $image_id, 'full' ) && wp_get_attachment_image_url( $image_id, 'thumbnail' );
 } ) );
@@ -14,8 +18,10 @@ $year_display = $year_manufacture && $year_model
 	? $year_manufacture . '/' . $year_model
 	: ( $year_manufacture ? $year_manufacture : $year_model );
 $fields = array(
-	'Ano' => $year_display,
+	'Ano de fabricação' => get_post_meta( $post_id, '_cv_ano_fabricacao', true ),
+	'Ano modelo' => get_post_meta( $post_id, '_cv_ano_modelo', true ),
 	'Quilometragem' => get_post_meta( $post_id, '_cv_quilometragem', true ) ? number_format_i18n( (int) get_post_meta( $post_id, '_cv_quilometragem', true ) ) . ' km' : '',
+	'Estilo' => implode( ', ', motors_marketplace_vehicle_term_names( $post_id, 'estilo' ) ),
 	'Motor' => get_post_meta( $post_id, '_cv_motor', true ),
 	'Combustível' => get_post_meta( $post_id, '_cv_combustivel', true ),
 	'Câmbio' => get_post_meta( $post_id, '_cv_cambio', true ),
@@ -48,6 +54,28 @@ $year_label = motors_marketplace_vehicle_year_label( $post_id );
 $mileage_label = get_post_meta( $post_id, '_cv_quilometragem', true ) ? number_format_i18n( (int) get_post_meta( $post_id, '_cv_quilometragem', true ) ) . ' km' : '';
 $subtitle = implode( ' · ', array_filter( array( $year_label, $mileage_label ) ) );
 $contact_status = isset( $_GET['contato_status'] ) ? sanitize_key( wp_unslash( $_GET['contato_status'] ) ) : '';
+
+function motors_marketplace_order_imported_gallery( $image_ids ) {
+	$images = array();
+	foreach ( $image_ids as $position => $image_id ) {
+		$source = get_post_meta( $image_id, '_agent_cars_image_source', true );
+		if ( ! $source ) {
+			$source = get_post_meta( $image_id, '_cv_source_image_url', true );
+		}
+		$filename = wp_basename( (string) wp_parse_url( $source, PHP_URL_PATH ) );
+		$sequence = preg_match( '/^(\d+)-/', $filename, $matches ) ? (int) $matches[1] : null;
+		$images[] = array( 'id' => $image_id, 'sequence' => $sequence, 'position' => $position );
+	}
+	$has_sequence = count( array_filter( array_column( $images, 'sequence' ), 'is_int' ) ) > 1;
+	if ( $has_sequence ) {
+		usort( $images, function( $a, $b ) {
+			if ( null === $a['sequence'] ) { return 1; }
+			if ( null === $b['sequence'] ) { return -1; }
+			return $a['sequence'] === $b['sequence'] ? $a['position'] - $b['position'] : $a['sequence'] - $b['sequence'];
+		} );
+	}
+	return array_values( array_map( function( $image ) { return $image['id']; }, $images ) );
+}
 ?>
 <main id="main-content" class="mm-site-main body">
 	<article class="mm-container mm-single">
