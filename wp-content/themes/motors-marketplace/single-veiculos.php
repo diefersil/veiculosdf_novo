@@ -18,8 +18,7 @@ $year_display = $year_manufacture && $year_model
 	? $year_manufacture . '/' . $year_model
 	: ( $year_manufacture ? $year_manufacture : $year_model );
 $fields = array(
-	'Ano de fabricação' => get_post_meta( $post_id, '_cv_ano_fabricacao', true ),
-	'Ano modelo' => get_post_meta( $post_id, '_cv_ano_modelo', true ),
+	'Ano' => $year_display,
 	'Quilometragem' => get_post_meta( $post_id, '_cv_quilometragem', true ) ? number_format_i18n( (int) get_post_meta( $post_id, '_cv_quilometragem', true ) ) . ' km' : '',
 	'Estilo' => implode( ', ', motors_marketplace_vehicle_term_names( $post_id, 'estilo' ) ),
 	'Motor' => get_post_meta( $post_id, '_cv_motor', true ),
@@ -49,11 +48,56 @@ $vehicle_name = $vehicle_name ? $vehicle_name : get_the_title( $post_id );
 $version_label = implode( ' ', $version );
 $has_version_in_name = $version_label && strtolower( substr( $vehicle_name, -strlen( $version_label ) ) ) === strtolower( $version_label );
 $single_title = trim( $vehicle_name . ( $version_label && ! $has_version_in_name ? ' ' . $version_label : '' ) );
+$transmission = get_post_meta( $post_id, '_cv_cambio', true );
+$single_title = motors_marketplace_clean_vehicle_card_label( $single_title, $transmission );
 $overline = $version ? '' : implode( ' · ', array_filter( array( get_post_meta( $post_id, '_cv_motor', true ), get_post_meta( $post_id, '_cv_combustivel', true ) ) ) );
+$overline = motors_marketplace_clean_vehicle_card_label( $overline, $transmission );
 $year_label = motors_marketplace_vehicle_year_label( $post_id );
 $mileage_label = get_post_meta( $post_id, '_cv_quilometragem', true ) ? number_format_i18n( (int) get_post_meta( $post_id, '_cv_quilometragem', true ) ) . ' km' : '';
 $subtitle = implode( ' · ', array_filter( array( $year_label, $mileage_label ) ) );
 $contact_status = isset( $_GET['contato_status'] ) ? sanitize_key( wp_unslash( $_GET['contato_status'] ) ) : '';
+$vehicle_type_ids = taxonomy_exists( 'tipo_veiculo' ) ? wp_get_object_terms( $post_id, 'tipo_veiculo', array( 'fields' => 'ids' ) ) : array();
+$model_ids = taxonomy_exists( 'modelo' ) ? wp_get_object_terms( $post_id, 'modelo', array( 'fields' => 'ids' ) ) : array();
+$brand_ids = taxonomy_exists( 'marca' ) ? wp_get_object_terms( $post_id, 'marca', array( 'fields' => 'ids' ) ) : array();
+$related_ids = array();
+$related_stages = array(
+	array( 'taxonomy' => 'modelo', 'terms' => $model_ids ),
+	array( 'taxonomy' => 'marca', 'terms' => $brand_ids ),
+	array( 'taxonomy' => '', 'terms' => array() ),
+);
+if ( $vehicle_type_ids && ! is_wp_error( $vehicle_type_ids ) ) {
+	foreach ( $related_stages as $stage ) {
+		$remaining = 4 - count( $related_ids );
+		if ( $remaining <= 0 ) { break; }
+		if ( $stage['taxonomy'] && ( ! $stage['terms'] || is_wp_error( $stage['terms'] ) ) ) { continue; }
+		$tax_query = array(
+			'relation' => 'AND',
+			array( 'taxonomy' => 'tipo_veiculo', 'field' => 'term_id', 'terms' => array_map( 'absint', $vehicle_type_ids ) ),
+		);
+		if ( $stage['taxonomy'] ) {
+			$tax_query[] = array( 'taxonomy' => $stage['taxonomy'], 'field' => 'term_id', 'terms' => array_map( 'absint', $stage['terms'] ) );
+		}
+		$matches = get_posts( array(
+			'post_type'           => 'veiculos',
+			'post_status'         => 'publish',
+			'posts_per_page'      => $remaining,
+			'post__not_in'        => array_merge( array( $post_id ), $related_ids ),
+			'tax_query'           => $tax_query,
+			'ignore_sticky_posts' => true,
+			'no_found_rows'       => true,
+		) );
+		foreach ( $matches as $match ) { $related_ids[] = (int) $match->ID; }
+	}
+}
+$related_query = new WP_Query( array(
+	'post_type'           => 'veiculos',
+	'post_status'         => 'publish',
+	'posts_per_page'      => count( $related_ids ),
+	'post__in'            => $related_ids ? $related_ids : array( 0 ),
+	'orderby'             => 'post__in',
+	'ignore_sticky_posts' => true,
+	'no_found_rows'       => true,
+) );
 
 function motors_marketplace_order_imported_gallery( $image_ids ) {
 	$images = array();
@@ -79,18 +123,22 @@ function motors_marketplace_order_imported_gallery( $image_ids ) {
 ?>
 <main id="main-content" class="mm-site-main body">
 	<article class="mm-container mm-single">
-		<?php if ( $overline ) : ?><p class="mm-vehicle-overline"><?php echo esc_html( $overline ); ?></p><?php endif; ?>
-		<h1 class="mm-single-title"><?php echo esc_html( $single_title ); ?></h1>
-		<div class="mm-single-subtitle"><?php echo esc_html( $subtitle ); ?></div>
+		<div class="mm-single-heading">
+			<div class="mm-single-heading-copy">
+				<?php if ( $overline ) : ?><p class="mm-vehicle-overline"><?php echo esc_html( $overline ); ?></p><?php endif; ?>
+				<h1 class="mm-single-title"><?php echo esc_html( $single_title ); ?></h1>
+				<div class="mm-single-subtitle"><?php echo esc_html( $subtitle ); ?></div>
+			</div>
+			<?php if ( $price ) : ?><div class="mm-single-price-badge">R$ <?php echo esc_html( number_format_i18n( (float) $price, 0 ) ); ?></div><?php endif; ?>
+		</div>
 		<div class="mm-single-layout">
 			<div>
 				<div class="mm-gallery" data-mm-gallery>
 					<?php if ( $gallery_image_ids ) : foreach ( $gallery_image_ids as $index => $image_id ) : $large_image = wp_get_attachment_image_src( $image_id, 'large' ); $full_image = wp_get_attachment_image_url( $image_id, 'full' ); if ( ! $large_image || ! $full_image ) { continue; } ?>
-						<button class="mm-gallery-slide<?php echo 0 === $index ? ' is-active' : ''; ?>" type="button" data-gallery-open="<?php echo (int) $index; ?>" data-full-image="<?php echo esc_url( $full_image ); ?>" aria-label="Abrir foto <?php echo (int) ( $index + 1 ); ?>" <?php echo 0 === $index ? '' : 'hidden'; ?>><img src="<?php echo esc_url( $large_image[0] ); ?>" alt="<?php echo esc_attr( get_the_title( $post_id ) . ' — foto ' . ( $index + 1 ) ); ?>"></button>
-					<?php endforeach; if ( count( $gallery_image_ids ) > 1 ) : ?><button class="mm-gallery-arrow mm-gallery-previous" type="button" data-gallery-step="-1" aria-label="Foto anterior">&#8249;</button><button class="mm-gallery-arrow mm-gallery-next" type="button" data-gallery-step="1" aria-label="PrÃ³xima foto">&#8250;</button><span class="mm-gallery-counter" data-gallery-counter>1 / <?php echo count( $gallery_image_ids ); ?></span><?php endif; else : ?><div class="mm-gallery-empty">Foto do veÃ­culo nÃ£o disponÃ­vel</div><?php endif; ?>
+						<button class="mm-gallery-slide<?php echo 0 === $index ? ' is-active' : ''; ?>" type="button" data-gallery-open="<?php echo (int) $index; ?>" data-full-image="<?php echo esc_url( $full_image ); ?>" aria-label="Abrir foto <?php echo (int) ( $index + 1 ); ?>" <?php echo 0 === $index ? '' : 'hidden'; ?>><img src="<?php echo esc_url( $large_image[0] ); ?>" alt="<?php echo esc_attr( get_the_title( $post_id ) . ' â€” foto ' . ( $index + 1 ) ); ?>"></button>
+					<?php endforeach; if ( count( $gallery_image_ids ) > 1 ) : ?><button class="mm-gallery-arrow mm-gallery-previous" type="button" data-gallery-step="-1" aria-label="Foto anterior">&#8249;</button><button class="mm-gallery-arrow mm-gallery-next" type="button" data-gallery-step="1" aria-label="Próxima foto">&#8250;</button><span class="mm-gallery-counter" data-gallery-counter>1 / <?php echo count( $gallery_image_ids ); ?></span><?php endif; else : ?><div class="mm-gallery-empty">Foto do veículo não disponível</div><?php endif; ?>
 				</div>
-				<?php if ( $gallery_image_ids ) : ?><div class="mm-lightbox" data-mm-lightbox role="dialog" aria-modal="true" aria-label="Galeria de fotos" hidden><button class="mm-lightbox-close" type="button" data-lightbox-close aria-label="Fechar galeria">&times;</button><button class="mm-lightbox-arrow mm-lightbox-previous" type="button" data-lightbox-step="-1" aria-label="Foto anterior">&#8249;</button><figure class="mm-lightbox-main"><img data-lightbox-image src="" alt=""><figcaption data-lightbox-caption></figcaption></figure><button class="mm-lightbox-arrow mm-lightbox-next" type="button" data-lightbox-step="1" aria-label="PrÃ³xima foto">&#8250;</button><?php if ( count( $gallery_image_ids ) > 1 ) : ?><div class="mm-lightbox-thumbnails" data-lightbox-thumbnails><?php foreach ( $gallery_image_ids as $index => $image_id ) : $thumb_image = wp_get_attachment_image_url( $image_id, 'thumbnail' ); $full_image = wp_get_attachment_image_url( $image_id, 'full' ); if ( ! $thumb_image || ! $full_image ) { continue; } ?><button class="mm-lightbox-thumbnail<?php echo 0 === $index ? ' is-active' : ''; ?>" type="button" data-lightbox-thumb="<?php echo (int) $index; ?>" data-full-image="<?php echo esc_url( $full_image ); ?>" aria-label="Ver foto <?php echo (int) ( $index + 1 ); ?>"><img src="<?php echo esc_url( $thumb_image ); ?>" alt=""></button><?php endforeach; ?></div><?php endif; ?><span class="mm-lightbox-counter" data-lightbox-counter></span></div><?php endif; ?>
-				<section class="mm-details"><h2>Detalhes do veículo</h2><p class="mm-price"><?php echo $price ? 'R$ ' . esc_html( number_format_i18n( (float) $price, 0 ) ) : 'Consulte o preço'; ?></p><dl class="mm-facts"><?php foreach ( $fields as $label => $value ) : if ( '' === (string) $value ) { continue; } ?><div><dt><?php echo esc_html( $label ); ?></dt><dd><?php echo esc_html( $value ); ?></dd></div><?php endforeach; ?></dl><div class="mm-description"><?php the_content(); ?></div></section>
+				<?php if ( $gallery_image_ids ) : ?><div class="mm-lightbox" data-mm-lightbox role="dialog" aria-modal="true" aria-label="Galeria de fotos" hidden><button class="mm-lightbox-close" type="button" data-lightbox-close aria-label="Fechar galeria">&times;</button><button class="mm-lightbox-arrow mm-lightbox-previous" type="button" data-lightbox-step="-1" aria-label="Foto anterior">&#8249;</button><figure class="mm-lightbox-main"><img data-lightbox-image src="" alt=""><figcaption data-lightbox-caption></figcaption></figure><button class="mm-lightbox-arrow mm-lightbox-next" type="button" data-lightbox-step="1" aria-label="Próxima foto">&#8250;</button><?php if ( count( $gallery_image_ids ) > 1 ) : ?><div class="mm-lightbox-thumbnails" data-lightbox-thumbnails><?php foreach ( $gallery_image_ids as $index => $image_id ) : $thumb_image = wp_get_attachment_image_url( $image_id, 'thumbnail' ); $full_image = wp_get_attachment_image_url( $image_id, 'full' ); if ( ! $thumb_image || ! $full_image ) { continue; } ?><button class="mm-lightbox-thumbnail<?php echo 0 === $index ? ' is-active' : ''; ?>" type="button" data-lightbox-thumb="<?php echo (int) $index; ?>" data-full-image="<?php echo esc_url( $full_image ); ?>" aria-label="Ver foto <?php echo (int) ( $index + 1 ); ?>"><img src="<?php echo esc_url( $thumb_image ); ?>" alt=""></button><?php endforeach; ?></div><?php endif; ?><span class="mm-lightbox-counter" data-lightbox-counter></span></div><?php endif; ?>
 			</div>
 			<aside class="mm-contact-stack" id="contato-anunciante">
 				<section class="mm-contact-card mm-advertiser-card">
@@ -114,6 +162,8 @@ function motors_marketplace_order_imported_gallery( $image_ids ) {
 				</section><?php endif; ?>
 			</aside>
 		</div>
+		<section class="mm-details mm-details-after-related" id="detalhes-veiculo"><h2>Detalhes do veículo</h2><dl class="mm-facts"><?php foreach ( $fields as $label => $value ) : if ( '' === (string) $value ) { continue; } ?><div><dt><?php echo esc_html( $label ); ?></dt><dd><?php echo esc_html( $value ); ?></dd></div><?php endforeach; ?></dl><div class="mm-description"><?php the_content(); ?></div></section>
+		<?php if ( $related_query->have_posts() ) : ?><section class="mm-related-section" aria-labelledby="mm-related-title"><div class="mm-related-heading"><h2 id="mm-related-title">Relacionados</h2><a href="<?php echo esc_url( get_post_type_archive_link( 'veiculos' ) ?: home_url( '/' ) ); ?>">Ver todos</a></div><div class="mm-related-grid"><?php while ( $related_query->have_posts() ) : $related_query->the_post(); motors_marketplace_vehicle_card( get_the_ID() ); endwhile; ?></div></section><?php endif; wp_reset_postdata(); ?>
 		<?php if ( $has_whatsapp ) : ?><div class="mm-lead-modal" data-cv-whatsapp-modal hidden aria-hidden="true"><div class="mm-lead-modal-backdrop" data-cv-modal-close></div><section class="mm-lead-modal-panel" role="dialog" aria-modal="true" aria-labelledby="mm-lead-modal-title"><button class="mm-lead-modal-close" type="button" data-cv-modal-close aria-label="Fechar">&times;</button><p class="mm-lead-modal-eyebrow">Contato</p><h2 id="mm-lead-modal-title">Falar com <?php echo esc_html( $advertiser_name ); ?></h2><form data-cv-whatsapp-form><input type="hidden" name="vehicle_id" value="<?php echo (int) $post_id; ?>"><input type="hidden" name="record_id" value=""><label>Seu Nome<input type="text" name="name" autocomplete="name" placeholder="Nome" required></label><label>Seu Email<input type="email" name="email" autocomplete="email" placeholder="Email" required></label><label>Seu WhatsApp<input type="tel" name="phone" autocomplete="tel" placeholder="WhatsApp" required></label><p class="mm-lead-modal-error" data-cv-lead-error role="alert" hidden></p><button class="mm-lead-whatsapp-submit" type="submit">Falar pelo WhatsApp</button></form></section></div><?php endif; ?>
 	</article>
 </main>

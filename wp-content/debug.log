@@ -1,0 +1,22 @@
+[16-Nov-2026 21:28:37 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function motors_marketplace_vehicle_archive_url() in C:\xampp\htdocs\xampp\motors\wp-content\themes\motors-marketplace\single-veiculos.php:157
+Stack trace:
+#0 C:\xampp\htdocs\xampp\motors\wp-includes\template-loader.php(132): include()
+#1 C:\xampp\htdocs\xampp\motors\wp-blog-header.php(19): require_once('C:\\xampp\\htdocs...')
+#2 C:\xampp\htdocs\xampp\motors\index.php(17): require('C:\\xampp\\htdocs...')
+#3 {main}
+  thrown in C:\xampp\htdocs\xampp\motors\wp-content\themes\motors-marketplace\single-veiculos.php on line 157
+[16-Nov-2026 21:28:39 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function motors_marketplace_vehicle_archive_url() in C:\xampp\htdocs\xampp\motors\wp-content\themes\motors-marketplace\single-veiculos.php:157
+Stack trace:
+#0 C:\xampp\htdocs\xampp\motors\wp-includes\template-loader.php(132): include()
+#1 C:\xampp\htdocs\xampp\motors\wp-blog-header.php(19): require_once('C:\\xampp\\htdocs...')
+#2 C:\xampp\htdocs\xampp\motors\index.php(17): require('C:\\xampp\\htdocs...')
+#3 {main}
+  thrown in C:\xampp\htdocs\xampp\motors\wp-content\themes\motors-marketplace\single-veiculos.php on line 157
+[16-Nov-2026 22:16:43 UTC] [Agent Cars] Execução concluída: 0 novos, 45 atualizados, 0 falhas.
+[16-Nov-2026 23:20:54 UTC] [Agent Cars] Execução concluída: 0 novos, 45 atualizados, 0 falhas.
+[17-Nov-2026 13:09:04 UTC] PHP Warning:  wp_version_check(): Ocorreu um erro inesperado. Algo pode estar errado com o WordPress.org ou com a configuração deste servidor. Se os problemas persistirem, busque ajuda no <a href="https://br.wordpress.org/support/forums/">fórum de suporte</a>. (O WordPress não conseguiu estabelecer uma conexão segura com o WordPress.org. Contate o administrador do servidor.) in C:\xampp\htdocs\xampp\motors\wp-includes\functions.php on line 6260
+[17-Nov-2026 13:09:14 UTC] PHP Warning:  wp_update_plugins(): Ocorreu um erro inesperado. Algo pode estar errado com o WordPress.org ou com a configuração deste servidor. Se os problemas persistirem, busque ajuda no <a href="https://br.wordpress.org/support/forums/">fórum de suporte</a>. (O WordPress não conseguiu estabelecer uma conexão segura com o WordPress.org. Contate o administrador do servidor.) in C:\xampp\htdocs\xampp\motors\wp-includes\functions.php on line 6260
+[17-Nov-2026 13:11:23 UTC] [Agent Cars] Execução concluída: 0 novos, 45 atualizados, 0 falhas.
+[17-Nov-2026 13:11:27 UTC] Automatic updates starting...
+[17-Nov-2026 13:11:27 UTC] Automatic updates complete.
+[17-Nov-2026 13:16:04 UTC] [Agent Cars] Execução concluída: 0 novos, 45 atualizados, 0 falhas.

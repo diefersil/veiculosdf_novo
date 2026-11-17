@@ -385,7 +385,7 @@ final class Cadastro_Veiculos {
 		wp_localize_script( 'cv-account-vehicles', 'CVAccountVehicles', array(
 			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 			'nonce' => wp_create_nonce( 'cv_account_vehicle_ajax' ),
-			'errorMessage' => 'NÃ£o foi possÃ­vel atualizar o anÃºncio. Tente novamente.',
+			'errorMessage' => 'Não foi possível atualizar o anúncio. Tente novamente.',
 		) );
 	}
 
@@ -413,7 +413,41 @@ final class Cadastro_Veiculos {
 		}
 		$html .= '</select></label><button type="submit">Buscar veículos</button></form><a class="cv-home-sell-link" href="#cadastre-seu-carro">Quer anunciar? Cadastre seu veículo</a></div></section>';
 		$html .= '<section class="cv-home-latest"><div class="cv-home-section-heading"><div><span class="cv-home-eyebrow">Novidades</span><h2>Últimos cadastros</h2></div><a href="' . esc_url( $archive ) . '">Ver todos</a></div>';
-		$latest = new WP_Query( array( 'post_type' => self::POST_TYPE, 'post_status' => 'publish', 'posts_per_page' => 6, 'orderby' => 'date', 'order' => 'DESC', 'meta_query' => self::public_vehicle_meta_query() ) );
+		$latest_by_type = array();
+		foreach ( array( 'carros', 'motos', 'caminhoes' ) as $vehicle_type ) {
+			$latest_by_type[ $vehicle_type ] = get_posts( array(
+				'post_type' => self::POST_TYPE,
+				'post_status' => 'publish',
+				'posts_per_page' => 6,
+				'orderby' => 'date',
+				'order' => 'DESC',
+				'meta_query' => self::public_vehicle_meta_query(),
+				'tax_query' => array( array( 'taxonomy' => self::TYPE_TAX, 'field' => 'slug', 'terms' => $vehicle_type ) ),
+			) );
+		}
+		$latest_ids = array();
+		$mix_order = array( 'carros', 'motos', 'carros', 'caminhoes', 'carros', 'carros' );
+		foreach ( $mix_order as $vehicle_type ) {
+			$vehicle = array_shift( $latest_by_type[ $vehicle_type ] );
+			if ( ! $vehicle ) {
+				foreach ( array( 'carros', 'motos', 'caminhoes' ) as $fallback_type ) {
+					if ( ! empty( $latest_by_type[ $fallback_type ] ) ) {
+						$vehicle = array_shift( $latest_by_type[ $fallback_type ] );
+						break;
+					}
+				}
+			}
+			if ( $vehicle ) {
+				$latest_ids[] = (int) $vehicle->ID;
+			}
+		}
+		if ( count( $latest_ids ) < 6 ) {
+			$fallback_vehicles = get_posts( array( 'post_type' => self::POST_TYPE, 'post_status' => 'publish', 'posts_per_page' => 6 - count( $latest_ids ), 'orderby' => 'date', 'order' => 'DESC', 'post__not_in' => $latest_ids, 'meta_query' => self::public_vehicle_meta_query() ) );
+			foreach ( $fallback_vehicles as $vehicle ) {
+				$latest_ids[] = (int) $vehicle->ID;
+			}
+		}
+		$latest = new WP_Query( array( 'post_type' => self::POST_TYPE, 'post_status' => 'publish', 'posts_per_page' => count( $latest_ids ), 'post__in' => $latest_ids ? $latest_ids : array( 0 ), 'orderby' => 'post__in', 'meta_query' => self::public_vehicle_meta_query() ) );
 		if ( $latest->have_posts() ) {
 			$html .= '<div class="mm-vehicle-grid">';
 			foreach ( $latest->posts as $vehicle ) {
@@ -594,14 +628,14 @@ final class Cadastro_Veiculos {
 
 	public static function ajax_toggle_account_vehicle() {
 		if ( ! is_user_logged_in() ) {
-			wp_send_json_error( array( 'message' => 'FaÃ§a login para gerenciar seus anÃºncios.' ), 401 );
+			wp_send_json_error( array( 'message' => 'Faça login para gerenciar seus anúncios.' ), 401 );
 		}
 		if ( ! check_ajax_referer( 'cv_account_vehicle_ajax', 'nonce', false ) ) {
-			wp_send_json_error( array( 'message' => 'Sua sessÃ£o expirou. Atualize a pÃ¡gina e tente novamente.' ), 403 );
+			wp_send_json_error( array( 'message' => 'Sua sessão expirou. Atualize a página e tente novamente.' ), 403 );
 		}
 		$vehicle_id = isset( $_POST['vehicle_id'] ) ? absint( wp_unslash( $_POST['vehicle_id'] ) ) : 0;
 		if ( ! $vehicle_id || self::POST_TYPE !== get_post_type( $vehicle_id ) || (int) get_post_field( 'post_author', $vehicle_id ) !== get_current_user_id() ) {
-			wp_send_json_error( array( 'message' => 'AnÃºncio nÃ£o encontrado.' ), 404 );
+			wp_send_json_error( array( 'message' => 'Anúncio não encontrado.' ), 404 );
 		}
 
 		$status = get_post_status( $vehicle_id );
@@ -614,7 +648,7 @@ final class Cadastro_Veiculos {
 		} else {
 			$can_reactivate = ( 'publish' === $status ) || ( 'pending' === $status && '0' === $active_meta );
 			if ( ! $can_reactivate ) {
-				wp_send_json_error( array( 'message' => 'Este anÃºncio ainda estÃ¡ aguardando revisÃ£o.' ), 409 );
+				wp_send_json_error( array( 'message' => 'Este anúncio ainda está aguardando revisão.' ), 409 );
 			}
 			if ( ! $expiration || $expiration < current_time( 'Y-m-d' ) ) {
 				update_post_meta( $vehicle_id, self::EXPIRATION_META, self::default_expiration_date() );
@@ -625,7 +659,7 @@ final class Cadastro_Veiculos {
 			}
 		}
 		if ( is_wp_error( $result ) || ! $result ) {
-			wp_send_json_error( array( 'message' => 'NÃ£o foi possÃ­vel atualizar o anÃºncio.' ), 500 );
+			wp_send_json_error( array( 'message' => 'Não foi possível atualizar o anúncio.' ), 500 );
 		}
 
 		$updated_post = get_post( $vehicle_id );
@@ -651,7 +685,7 @@ final class Cadastro_Veiculos {
 		$contact_allowed = apply_filters( 'cv_contact_form_allowed', true, $vehicle_id );
 		$sent = $contact_allowed && $name && is_email( $email ) && $message && $author && is_email( $author->user_email );
 		if ( $sent ) {
-			$subject = sprintf( 'Interesse no veÃ­culo: %s', get_the_title( $vehicle_id ) );
+			$subject = sprintf( 'Interesse no veículo: %s', get_the_title( $vehicle_id ) );
 			$body = "Nome: {$name}\nE-mail: {$email}\nTelefone/WhatsApp: {$phone}\n\nMensagem:\n{$message}";
 			$sent = wp_mail( $author->user_email, $subject, $body, array( 'Reply-To: ' . $email ) );
 		}
@@ -720,8 +754,8 @@ final class Cadastro_Veiculos {
 		$status = isset( $_GET['perfil_status'] ) ? sanitize_key( $_GET['perfil_status'] ) : '';
 		$messages = array(
 			'saved'         => 'Seus dados foram atualizados.',
-			'invalid_email' => 'Informe um e-mail vÃ¡lido que ainda nÃ£o esteja em uso.',
-			'error'         => 'NÃ£o foi possÃ­vel atualizar seus dados.',
+			'invalid_email' => 'Informe um e-mail válido que ainda não esteja em uso.',
+			'error'         => 'Não foi possível atualizar seus dados.',
 		);
 		$html = '<section class="cv-account-form cv-account-profile"><h3>Meu perfil</h3><p>Atualize seus dados pessoais e de contato.</p>';
 		if ( isset( $messages[ $status ] ) ) {
@@ -734,7 +768,7 @@ final class Cadastro_Veiculos {
 			'email'      => array( 'E-mail', $user->user_email, 'email' ),
 			'telefone'   => array( 'Telefone', get_user_meta( $user_id, 'cv_telefone', true ), 'tel' ),
 			'whatsapp'   => array( 'WhatsApp', get_user_meta( $user_id, 'cv_whatsapp', true ), 'tel' ),
-			'endereco'   => array( 'EndereÃ§o', get_user_meta( $user_id, 'cv_endereco', true ), 'text' ),
+			'endereco'   => array( 'Endereço', get_user_meta( $user_id, 'cv_endereco', true ), 'text' ),
 			'cidade'     => array( 'Cidade', get_user_meta( $user_id, 'cv_cidade', true ), 'text' ),
 			'estado'     => array( 'Estado', get_user_meta( $user_id, 'cv_estado', true ), 'text' ),
 		);
