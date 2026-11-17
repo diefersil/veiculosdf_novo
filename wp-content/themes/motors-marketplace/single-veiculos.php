@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 get_header();
 the_post();
 $post_id = get_the_ID();
@@ -26,6 +26,7 @@ $fields = array(
 	'Câmbio' => get_post_meta( $post_id, '_cv_cambio', true ),
 	'Cor' => get_post_meta( $post_id, '_cv_cor', true ),
 );
+$fields = array_map( 'motors_marketplace_title_case_vehicle_words', $fields );
 $price = get_post_meta( $post_id, '_cv_preco', true );
 $author_id = (int) get_post_field( 'post_author', $post_id );
 $advertiser = get_userdata( $author_id );
@@ -168,3 +169,4 @@ function motors_marketplace_order_imported_gallery( $image_ids ) {
 	</article>
 </main>
 <?php get_footer(); ?>
+

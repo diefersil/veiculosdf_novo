@@ -1,0 +1,114 @@
+0000.001 (0) Opened log file at time: Tue, 17 Nov 2026 13:24:02 +0000 on http://localhost/xampp/motors
+0000.008 (0) UpdraftPlus WordPress backup plugin (https://updraftplus.com): 1.26.14 WP: 7.1.4 PHP: 8.0.30 (apache2handler, Windows NT PICHAUP-8ORL8T3 10.0 build 26200 (Windows 10) AMD64) MySQL: 10.4.32-MariaDB (max packet size=1048576000) WPLANG: pt_BR Server: Apache/2.4.58 (Win64) OpenSSL/3.1.3 PHP/8.0.30 safe_mode: 0 max_execution_time: 900 memory_limit: 2048M (used: 46.4M | 48M) multisite: N openssl: OpenSSL 1.1.1t  7 Feb 2023 mcrypt: N LANG:  WP Proxy: disabled ZipArchive::addFile: Y
+0000.013 (0) Free space on disk containing Updraft's temporary directory: 194899.5 MB
+0000.020 (0) Tasks: Backup files: 0 (schedule: manual) Backup DB: 1 (schedule: daily)
+0000.025 (0) Semaphore (d, wp_options) being initialised
+0000.046 (0) Requesting semaphore lock (d) (apparently not via scheduler)
+0000.063 (0) Set semaphore last lock (d) time to 2026-11-17 13:24:03
+0000.067 (0) Semaphore lock (d) complete
+0000.079 (0) Backup run: resumption=0, nonce=5041588d1c34, file_nonce=5041588d1c34 begun at=1794921842 (1s ago), job type=backup
+0000.088 (0) Scheduling a resumption (1) after 300 seconds (1794922143) in case this run gets aborted
+0000.128 (0) This backup run is not intended for files - skipping
+0000.132 (0) Beginning creation of database dump (WordPress DB)
+0000.136 (0) SQL compatibility mode is now: NO_ZERO_IN_DATE,NO_ENGINE_SUBSTITUTION
+0000.144 (0) Testing potential mysqldump binary: C:\Program Files\MySQL\MySQL Workbench 8.0 CE\mysqldump.exe
+0000.153 (0) PHP event: code E_WARNING: popen(cd &quot;C:\xampp\htdocs\xampp\motors\wp-content\updraft&quot; &amp; &quot;C:\Program Files\MySQL\MySQL Workbench 8.0 CE\mysqldump.exe&quot; --defaults-file=5977c3c071958dc7fc0c323ea2f19ce5.tmp --max_allowed_packet=1M --quote-names --add-drop-table --no-tablespaces --skip-comments --skip-set-charset --allow-keywords --dump-date --extended-insert --where=option_name='siteurl' --user=&quot;root&quot; --host=&quot;localhost&quot; motors &quot;wp_options&quot;,r): Invalid argument (line 1813, C:\xampp\htdocs\xampp\motors\wp-content\plugins\updraftplus\class-updraftplus.php)
+0000.157 (0) Error: popen failed
+0000.189 (0) Table wp_options: Total expected rows (via COUNT): 224
+0000.193 (0) Table is relatively small; fetch_rows will thus be: 250 (allow_further_reductions=1, is_first_fetch=1, known_bigger_than_table=1)
+0000.232 (0) Table wp_options: Rows added in this batch (next record: 18488): 220 (uncompressed bytes in this segment=891774) in 0.05 seconds
+0000.256 (0) Table wp_options: finishing file(s) (2, 212.2 KB)
+0000.270 (0) Table wp_users: Total expected rows (via COUNT): 4
+0000.274 (0) Table is relatively small; fetch_rows will thus be: 20 (allow_further_reductions=1, is_first_fetch=1, known_bigger_than_table=1)
+0000.282 (0) Table wp_users: Rows added in this batch (next record: 4): 4 (uncompressed bytes in this segment=1894) in 0.02 seconds
+0000.300 (0) Table wp_users: finishing file(s) (2, 0.9 KB)
+0000.320 (0) Table wp_usermeta: Total expected rows (via COUNT): 88
+0000.324 (0) Table is relatively small; fetch_rows will thus be: 100 (allow_further_reductions=1, is_first_fetch=1, known_bigger_than_table=1)
+0000.333 (0) Table wp_usermeta: Rows added in this batch (next record: 88): 88 (uncompressed bytes in this segment=4988) in 0.02 seconds
+0000.354 (0) Table wp_usermeta: finishing file(s) (2, 1.9 KB)
+0000.380 (0) Table wp_commentmeta: Total expected rows (via COUNT): 0
+0000.388 (0) Table wp_commentmeta: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=634) in 0.02 seconds
+0000.409 (0) Table wp_commentmeta: finishing file(s) (2, 0.4 KB)
+0000.421 (0) Table wp_comments: Total expected rows (via COUNT): 1
+0000.425 (0) Table is relatively small; fetch_rows will thus be: 20 (allow_further_reductions=1, is_first_fetch=1, known_bigger_than_table=1)
+0000.433 (0) Table wp_comments: Rows added in this batch (next record: 1): 1 (uncompressed bytes in this segment=1888) in 0.02 seconds
+0000.451 (0) Table wp_comments: finishing file(s) (2, 0.7 KB)
+0000.473 (0) Table wp_links: Total expected rows (via COUNT): 0
+0000.486 (0) Table wp_links: Rows added in this batch (next record: -1): 0 (uncompressed bytes in this segment=1027) in 0.02 seconds
+0000.504 (0) Table wp_links: finishing file(s) (2, 0.5 KB)
+0000.532 (0) Table wp_postmeta: Total expected rows (approximate): 2116
+0000.554 (0) Table wp_postmeta: Rows added in this batch (next record: 2163): 2155 (uncompressed bytes in this segment=302460) in 0.04 seconds
+0000.573 (0) Table wp_postmeta: finishing file(s) (2, 27.3 KB)
+0000.596 (0) Table wp_posts: Total expected rows (via COUNT): 381
+0000.600 (0) Table is relatively small; fetch_rows will thus be: 500 (allow_further_reductions=1, is_first_fetch=1, known_bigger_than_table=1)
+0000.616 (0) Table wp_posts: Rows added in this batch (next record: 387): 381 (uncompressed bytes in this segment=155157) in 0.03 seconds
+0000.637 (0) Table wp_posts: finishing file(s) (2, 16.5 KB)
+0000.649 (0) Table wp_term_relationships: Total expected rows (approximate): 400
+0000.662 (0) Table wp_term_relationships: Rows added in this batch (next record: 100000): 415 (uncompressed bytes in this segment=6915) in 0.02 seconds
+0000.677 (0) Table wp_term_relationships: finishing file(s) (2, 1.6 KB)
+0000.747 (0) Table wp_term_taxonomy: Total expected rows (approximate): 18137
+0000.859 (0) Table wp_term_taxonomy: Rows added in this batch (next record: 18018): 18018 (uncompressed bytes in this segment=691693) in 0.17 seconds
+0000.889 (0) Table wp_term_taxonomy: finishing file(s) (2, 116.3 KB)
+0000.983 (0) Table wp_termmeta: Total expected rows (approximate): 64320
+0001.358 (0) Table wp_termmeta: Rows added in this batch (next record: 64488): 64488 (uncompressed bytes in this segment=3259206) in 0.46 seconds
+0001.381 (0) Table wp_termmeta: finishing file(s) (2, 389.7 KB)
+0001.394 (0) Table wp_terms: Total expected rows (approximate): 18302
+0001.543 (0) Table wp_terms: Rows added in this batch (next record: 18018): 18018 (uncompressed bytes in this segment=939977) in 0.15 seconds
+0001.561 (0) Table wp_terms: finishing file(s) (2, 201.6 KB)
+0001.584 (0) Table wp_leads_records: Total expected rows (via COUNT): 5
+0001.588 (0) Table is relatively small; fetch_rows will thus be: 20 (allow_further_reductions=1, is_first_fetch=1, known_bigger_than_table=1)
+0001.597 (0) Table wp_leads_records: Rows added in this batch (next record: 5): 5 (uncompressed bytes in this segment=1675) in 0.02 seconds
+0001.615 (0) Table wp_leads_records: finishing file(s) (2, 0.7 KB)
+0001.621 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_options.table.tmpr18489.gz (1/13/fopen): adding to final database dump
+0001.631 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_options.table.gz (2/13/fopen): adding to final database dump
+0001.635 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_users.table.tmpr5.gz (3/13/fopen): adding to final database dump
+0001.639 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_users.table.gz (4/13/fopen): adding to final database dump
+0001.644 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_usermeta.table.tmpr89.gz (5/13/fopen): adding to final database dump
+0001.649 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_usermeta.table.gz (6/13/fopen): adding to final database dump
+0001.654 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_commentmeta.table.tmpr0.gz (7/13/fopen): adding to final database dump
+0001.659 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_commentmeta.table.gz (8/13/fopen): adding to final database dump
+0001.663 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_comments.table.tmpr2.gz (9/13/fopen): adding to final database dump
+0001.668 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_comments.table.gz (10/13/fopen): adding to final database dump
+0001.673 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_links.table.tmpr0.gz (11/13/fopen): adding to final database dump
+0001.677 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_links.table.gz (12/13/fopen): adding to final database dump
+0001.682 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_postmeta.table.tmpr2164.gz (13/13/fopen): adding to final database dump
+0001.689 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_postmeta.table.gz (14/13/fopen): adding to final database dump
+0001.693 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_posts.table.tmpr388.gz (15/13/fopen): adding to final database dump
+0001.698 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_posts.table.gz (16/13/fopen): adding to final database dump
+0001.702 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_term_relationships.table.tmpr100001.gz (17/13/fopen): adding to final database dump
+0001.706 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_term_relationships.table.gz (18/13/fopen): adding to final database dump
+0001.710 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_term_taxonomy.table.tmpr18019.gz (19/13/fopen): adding to final database dump
+0001.719 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_term_taxonomy.table.gz (20/13/fopen): adding to final database dump
+0001.722 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_termmeta.table.tmpr64489.gz (21/13/fopen): adding to final database dump
+0001.736 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_termmeta.table.gz (22/13/fopen): adding to final database dump
+0001.740 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_terms.table.tmpr18019.gz (23/13/fopen): adding to final database dump
+0001.748 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_terms.table.gz (24/13/fopen): adding to final database dump
+0001.752 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_leads_records.table.tmpr6.gz (25/13/fopen): adding to final database dump
+0001.757 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db-table-wp_leads_records.table.gz (26/13/fopen): adding to final database dump
+0001.770 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db.gz: finished writing out complete database file (970.6 KB)
+0001.803 (0) Total database tables backed up: 13 (backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db.gz, size: 993969, sha1: 4782dc05869031d4b37e85165453fd10813d292c, sha256: d3cf75218de44eb5b83f6c64265f31a43042fe0e8a68084498ecf14ead8f173b)
+0001.822 (0) backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db.gz: db: This file has not yet been successfully uploaded: will queue
+0001.826 (0) Saving backup history. Total backup size: 970.7 KB
+0001.836 (0) Requesting upload of the files that have not yet been successfully uploaded (1)
+0001.848 (0) Cloud backup selection (1/1): googledrive with instance (1/1) (last)
+0001.856 (0) Beginning dispatch of backup to remote (googledrive) (instance identifier s-99978ee932d40e5d15a857ce11a0bb38)
+0003.129 (0) Google Drive: quota usage: used=27148.7 MB, total=102400 MB, available=75251.3 MB
+0003.135 (0) Google Drive: backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db.gz: Attempting to upload to Google Drive (into folder id: 1GY5in6q8-qd-jaYIo6OZGVljevHZoF74)
+0005.848 (0) Googledrive chunked upload: 100 % uploaded
+0005.862 (0) Google Drive: OK: Archive backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db.gz uploaded in 2.72 seconds
+0005.867 (0) Recording as successfully uploaded: backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db.gz
+0005.877 (0) Deleting local file: backup_2026-11-17-1024_Veculos_DF_5041588d1c34-db.gz: OK
+0005.891 (0) Retain: beginning examination of existing backup sets; user setting: retain_files=2, retain_db=2
+0005.896 (0) Number of backup sets in history: 1; groups (db): 1
+0005.900 (0) Examining (for databases) backup set with group_id=0, nonce=5041588d1c34, datestamp=1794921842 (Nov 17 2026 13:24:02)
+0005.904 (0) This backup set is the backup set just made, so will not be deleted.
+0005.904 (0) Number of backup sets in history: 1; groups (files): 1
+0005.908 (0) Examining (for files) backup set with nonce=5041588d1c34, datestamp=1794921842 (Nov 17 2026 13:24:02)
+0005.908 (0) This backup set remains non-empty (f=0/d=1); will retain in history
+0005.912 (0) Retain: saving new backup history (sets now: 1) and finishing retain operation
+0005.921 (0) Resume backup (5041588d1c34, 0): finish run
+0005.932 (0) Decremented the semaphore (d) by 1
+0005.939 (0) Semaphore (d) unlocked
+0005.942 (0) There were no errors in the uploads, so the 'resume' event (1) is being unscheduled
+0005.954 (0) No email will/can be sent - the user has not configured an email address.
+0005.957 (0) The backup succeeded and is now complete
